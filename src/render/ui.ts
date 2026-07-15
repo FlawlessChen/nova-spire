@@ -1,22 +1,30 @@
 import { Container, Graphics, Text } from 'pixi.js';
 
-// Shared PixiJS UI primitives used across the render layer (combat, map,
-// reward, campfire). Keeping them here avoids re-implementing labels/buttons in
-// every view. All are plain factories returning display objects — no state.
+// Shared PixiJS UI primitives + the deep-space design tokens ("Nova Spire"
+// theme: sci-fi starfield, mysterious tower). Every view pulls colors from UI
+// so the palette can be retuned in one place.
 
 export const FONT = 'system-ui, "Segoe UI", Roboto, sans-serif';
 
 export const UI = {
-  text: 0xe8e8f0,
-  subtle: 0x9aa0b4,
-  panel: 0x1e2130,
-  button: 0x3a5a8a,
-  buttonAlt: 0x2f6b4a,
-  buttonText: 0xffffff,
-  accent: 0xf0c419,
-  overlay: 0x0a0b10,
-  danger: 0xd8443a,
-  good: 0x4ec06a,
+  // base
+  bgDeep: 0x0a0e1c,       // page/space background
+  panel: 0x141a2e,        // card/panel surface
+  panelBorder: 0x2e3a5c,  // hairline panel border
+  overlay: 0x060912,      // full-screen dim
+  // accents
+  accent: 0x4dd8ff,       // cyan — primary sci-fi accent
+  accent2: 0x9d6bff,      // violet — secondary / arcane
+  gold: 0xffd54d,         // energy / rare / rewards
+  danger: 0xff5a6a,
+  good: 0x52e09a,
+  // text
+  text: 0xe8ecff,
+  subtle: 0x8f9bc4,
+  // buttons
+  button: 0x1c2d52,
+  buttonAlt: 0x1d4636,
+  buttonText: 0xeafcff,
 } as const;
 
 export function label(
@@ -85,21 +93,54 @@ export function button(
   c.x = x;
   c.y = y;
   c.alpha = enabled ? 1 : 0.45;
-  c.addChild(
-    new Graphics()
-      .roundRect(0, 0, w, h, 10)
-      .fill(opts.color ?? UI.button)
-      .stroke({ width: 2, color: 0x000000, alpha: 0.4 }),
-  );
+
+  const base = opts.color ?? UI.button;
+  const g = new Graphics()
+    .roundRect(0, 0, w, h, 12)
+    .fill(base)
+    .stroke({ width: 1.5, color: UI.accent, alpha: 0.55 });
+  // top sheen line for a subtle sci-fi gradient feel
+  g.roundRect(2, 2, w - 4, h * 0.42, 10).fill({ color: 0xffffff, alpha: 0.06 });
+  c.addChild(g);
   c.addChild(label(text, opts.fontSize ?? 20, UI.buttonText, w / 2, h / 2, 0.5));
+
   if (enabled) {
     c.eventMode = 'static';
     c.cursor = 'pointer';
     c.on('pointertap', onClick);
+    // press feedback (touch-friendly): shrink slightly toward the centre
+    const press = (): void => {
+      c.scale.set(0.96);
+      c.x = x + w * 0.02;
+      c.y = y + h * 0.02;
+    };
+    const release = (): void => {
+      c.scale.set(1);
+      c.x = x;
+      c.y = y;
+    };
+    c.on('pointerdown', press);
+    c.on('pointerup', release);
+    c.on('pointerupoutside', release);
   }
   return c;
 }
 
-export function panel(w: number, h: number, color: number = UI.panel, radius = 10): Graphics {
-  return new Graphics().roundRect(0, 0, w, h, radius).fill(color);
+/** Themed surface: dark panel with hairline border and a faint top sheen. */
+export function panel(w: number, h: number, color: number = UI.panel, radius = 12): Graphics {
+  const g = new Graphics()
+    .roundRect(0, 0, w, h, radius)
+    .fill(color)
+    .stroke({ width: 1, color: UI.panelBorder, alpha: 0.9 });
+  g.roundRect(1, 1, w - 2, Math.max(8, h * 0.3), radius - 1).fill({ color: 0xffffff, alpha: 0.035 });
+  return g;
+}
+
+/** Soft glow: layered translucent circles (no filter dependencies). */
+export function glowCircle(x: number, y: number, r: number, color: number, coreAlpha = 0.9): Graphics {
+  const g = new Graphics();
+  g.circle(x, y, r * 2.2).fill({ color, alpha: 0.08 });
+  g.circle(x, y, r * 1.5).fill({ color, alpha: 0.16 });
+  g.circle(x, y, r).fill({ color, alpha: coreAlpha });
+  return g;
 }

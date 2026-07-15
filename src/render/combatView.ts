@@ -3,48 +3,43 @@ import type { CombatEngine } from '@/game/combatEngine';
 import type { EnemyState, GameEvent, StatusInstance, StatusId } from '@/types';
 import { PLAYER_ID } from '@/types';
 import { CARDS } from '@/data/cards';
-import { ENEMIES } from '@/data/enemies';
-import { RELICS } from '@/data/relics';
 import { getStatusStacks } from '@/game/entities';
 import { WEAK_MULTIPLIER, VULNERABLE_MULTIPLIER } from '@/data/statuses';
 import { playSound } from '@/render/sound';
 import { layout } from '@/render/layout';
+import { L, enemyName, relicName, statusShort } from '@/i18n';
+import { UI, button, label as uiLabel } from '@/render/ui';
+import { portrait } from '@/render/portraits';
+import { cardFace } from '@/render/cardArt';
 
 // PixiJS render layer. Reads CombatState and draws it; never mutates game state.
 // All player input flows back through CombatEngine methods. On any engine call
 // the view fully re-renders — combat is turn-based, so a full redraw per action
-// is simpler and plenty fast. All coordinates come from the orientation-aware
-// `layout` singleton: landscape 1280x720, portrait (mobile) 720x1280.
-
-const FONT = 'system-ui, "Segoe UI", Roboto, sans-serif';
+// is simpler and plenty fast. Coordinates come from the orientation-aware
+// `layout` singleton; all text comes from the active locale (zh-CN).
 
 const COLOR = {
-  panel: 0x1e2130,
-  enemyPanel: 0x2a1f28,
-  playerPanel: 0x1f2a24,
-  hpBg: 0x401518,
-  hpEnemy: 0xd8443a,
-  hpPlayer: 0x4ec06a,
-  block: 0x4a90d9,
-  energy: 0xf0c419,
-  cardAttack: 0x8a2f2f,
-  cardSkill: 0x2f6b8a,
-  cardPower: 0x6b3f8a,
-  costCircle: 0x11131a,
-  selected: 0xf0c419,
-  button: 0x3a5a8a,
-  buttonText: 0xffffff,
-  text: 0xe8e8f0,
-  subtle: 0x9aa0b4,
-  overlay: 0x0a0b10,
+  enemyPanel: 0x1b1430,
+  playerPanel: 0x0f2136,
+  hpBg: 0x2a1220,
+  hpEnemy: 0xff5a6a,
+  hpPlayer: 0x52e09a,
+  block: 0x3fa9e8,
+  energy: 0xffd54d,
+  selected: 0xffd54d,
+  text: 0xe8ecff,
+  subtle: 0x8f9bc4,
+  overlay: 0x060912,
 } as const;
 
-const STATUS_META: Record<StatusId, { short: string; color: number }> = {
-  weak: { short: '弱', color: 0x9b59b6 },
-  vulnerable: { short: '易伤', color: 0xe67e22 },
-  poison: { short: '毒', color: 0x27ae60 },
-  strength: { short: '力', color: 0xf1c40f },
+const STATUS_COLORS: Record<StatusId, number> = {
+  weak: 0x9b59b6,
+  vulnerable: 0xe67e22,
+  poison: 0x27ae60,
+  strength: 0xf1c40f,
 };
+
+const ENEMY_PANEL_H = 176;
 
 export class CombatView {
   readonly root = new Container();
@@ -69,20 +64,20 @@ export class CombatView {
   private onEvent(e: GameEvent): void {
     switch (e.type) {
       case 'onTurnStart':
-        if (e.side === 'player') this.pushLog(`— 回合 ${e.turn} —`);
+        if (e.side === 'player') this.pushLog(L.ui.logTurn(e.turn));
         break;
       case 'onCardPlayed':
         playSound('card');
         break;
       case 'onDamageTaken':
         if (e.targetId === PLAYER_ID && e.amount > 0) {
-          this.pushLog(`你受到 ${e.amount} 伤害${e.blocked > 0 ? `（挡下 ${e.blocked}）` : ''}`);
+          this.pushLog(L.ui.logPlayerHit(e.amount, e.blocked));
         }
         this.spawnDamageFloat(e.targetId, e.amount, e.blocked);
         playSound(e.amount > 0 ? 'hit' : 'block');
         break;
       case 'onEnemyDeath':
-        this.pushLog('敌人被击败！');
+        this.pushLog(L.ui.logEnemyDead);
         break;
     }
   }
@@ -114,7 +109,7 @@ export class CombatView {
   private spawnDamageFloat(targetId: string, amount: number, blocked: number): void {
     const pos = this.positionFor(targetId);
     if (!pos) return;
-    const text = amount > 0 ? `-${amount}` : blocked > 0 ? `格挡 ${blocked}` : '';
+    const text = amount > 0 ? `-${amount}` : blocked > 0 ? L.ui.blockFloat(blocked) : '';
     if (!text) return;
     const color = amount > 0 ? 0xff5a5a : 0x6bb8ff;
     const node = this.label(text, amount >= 10 ? 30 : 24, color, pos.x, pos.y, 0.5);
@@ -134,7 +129,7 @@ export class CombatView {
     const gap = 40;
     const totalW = enemies.length * panelW + (enemies.length - 1) * gap;
     const x = (layout.W - totalW) / 2 + idx * (panelW + gap) + panelW / 2;
-    return { x, y: layout.portrait ? 240 : 150 };
+    return { x, y: layout.portrait ? 240 : 160 };
   }
 
   private pushLog(msg: string): void {
@@ -207,11 +202,11 @@ export class CombatView {
 
   private drawHeader(): void {
     const state = this.engine.state;
-    this.root.addChild(this.label(`回合 ${state.turn}`, 24, COLOR.text, layout.W / 2, 16, 0.5));
+    this.root.addChild(this.label(L.ui.turn(state.turn), 24, COLOR.text, layout.W / 2, 16, 0.5));
     this.root.addChild(
-      this.label(`抽牌堆 ${state.drawPile.length}`, 15, COLOR.subtle, 20, layout.H - 26),
+      this.label(L.ui.drawPile(state.drawPile.length), 15, COLOR.subtle, 20, layout.H - 26),
     );
-    const discard = this.label(`弃牌堆 ${state.discardPile.length}`, 15, COLOR.subtle, layout.W - 20, layout.H - 26);
+    const discard = this.label(L.ui.discardPile(state.discardPile.length), 15, COLOR.subtle, layout.W - 20, layout.H - 26);
     discard.anchor.set(1, 0);
     this.root.addChild(discard);
 
@@ -219,14 +214,17 @@ export class CombatView {
     let rx = layout.portrait ? 16 : 30;
     const ry = layout.portrait ? 46 : 14;
     for (const id of this.relicIds) {
-      const def = RELICS[id];
-      if (!def) continue;
-      const name = this.label(def.name, 13, COLOR.text, 0, 0, 0);
+      const name = this.label(relicName(id), 13, COLOR.text, 0, 0, 0);
       const pillW = name.width + 16;
       const pill = new Container();
       pill.x = rx;
       pill.y = ry;
-      pill.addChild(new Graphics().roundRect(0, 0, pillW, 22, 6).fill({ color: 0x3a3520 }).stroke({ width: 1, color: COLOR.energy, alpha: 0.6 }));
+      pill.addChild(
+        new Graphics()
+          .roundRect(0, 0, pillW, 22, 6)
+          .fill({ color: 0x241f10, alpha: 0.9 })
+          .stroke({ width: 1, color: COLOR.energy, alpha: 0.6 }),
+      );
       name.x = 8;
       name.y = 4;
       pill.addChild(name);
@@ -257,33 +255,45 @@ export class CombatView {
     const c = new Container();
     c.x = x;
     c.y = y;
-    const h = 128;
+    const h = ENEMY_PANEL_H;
     const selecting = this.selectedInstanceId !== null;
 
-    const bg = new Graphics().roundRect(0, 0, w, h, 10).fill(COLOR.enemyPanel);
-    if (selecting) bg.stroke({ width: 3, color: COLOR.selected });
+    const bg = new Graphics()
+      .roundRect(0, 0, w, h, 12)
+      .fill({ color: COLOR.enemyPanel, alpha: 0.92 })
+      .stroke(
+        selecting
+          ? { width: 3, color: COLOR.selected }
+          : { width: 1, color: UI.panelBorder, alpha: 0.9 },
+      );
     c.addChild(bg);
 
     // intent telegraph, above the panel
     const intent = this.intentText(enemy);
     const intentBg = new Graphics()
       .roundRect(w / 2 - 60, -34, 120, 26, 8)
-      .fill({ color: 0x000000, alpha: 0.4 });
+      .fill({ color: 0x000000, alpha: 0.45 })
+      .stroke({ width: 1, color: intent.color, alpha: 0.5 });
     c.addChild(intentBg);
     c.addChild(this.label(intent.label, 15, intent.color, w / 2, -21, 0.5));
 
+    // portrait emblem
+    const face = portrait(enemy.definitionId, 56);
+    face.x = w / 2;
+    face.y = 44;
+    c.addChild(face);
+
     // name
-    const name = ENEMIES[enemy.definitionId]?.name ?? enemy.definitionId;
-    c.addChild(this.label(name, 17, COLOR.text, w / 2, 12, 0.5));
+    c.addChild(this.label(enemyName(enemy.definitionId), 15, COLOR.text, w / 2, 82, 0.5));
 
     // hp bar
-    c.addChild(this.bar(16, 42, w - 32, 20, enemy.hp, enemy.maxHp, COLOR.hpEnemy));
+    c.addChild(this.bar(16, 96, w - 32, 18, enemy.hp, enemy.maxHp, COLOR.hpEnemy));
 
     // block
-    if (enemy.block > 0) c.addChild(this.blockBadge(w - 44, 40, enemy.block));
+    if (enemy.block > 0) c.addChild(this.blockBadge(w - 44, 94, enemy.block));
 
     // statuses
-    c.addChild(this.statusRow(enemy.statuses, 16, 78));
+    c.addChild(this.statusRow(enemy.statuses, 16, 128));
 
     if (selecting) {
       c.eventMode = 'static';
@@ -300,11 +310,23 @@ export class CombatView {
     c.y = 470;
     const w = 250;
     const h = 150;
-    c.addChild(new Graphics().roundRect(0, 0, w, h, 10).fill(COLOR.playerPanel));
-    c.addChild(this.label('你', 18, COLOR.text, 16, 12));
-    c.addChild(this.bar(16, 44, w - 32, 22, p.hp, p.maxHp, COLOR.hpPlayer));
-    if (p.block > 0) c.addChild(this.blockBadge(w - 44, 42, p.block));
-    c.addChild(this.statusRow(p.statuses, 16, 82));
+    c.addChild(
+      new Graphics()
+        .roundRect(0, 0, w, h, 12)
+        .fill({ color: COLOR.playerPanel, alpha: 0.92 })
+        .stroke({ width: 1, color: UI.accent, alpha: 0.4 }),
+    );
+
+    // nova emblem + name
+    const face = portrait(PLAYER_ID, 44);
+    face.x = 36;
+    face.y = 36;
+    c.addChild(face);
+    c.addChild(this.label(L.ui.you, 18, COLOR.text, 66, 24));
+
+    c.addChild(this.bar(16, 68, w - 32, 22, p.hp, p.maxHp, COLOR.hpPlayer));
+    if (p.block > 0) c.addChild(this.blockBadge(w - 44, 66, p.block));
+    c.addChild(this.statusRow(p.statuses, 16, 104));
     this.root.addChild(c);
 
     // energy orb: floats over the panel corner in landscape, sits to the
@@ -312,6 +334,7 @@ export class CombatView {
     const orb = new Container();
     orb.x = layout.portrait ? 330 : 175;
     orb.y = layout.portrait ? 545 : 452;
+    orb.addChild(new Graphics().circle(0, 0, 40).fill({ color: COLOR.energy, alpha: 0.12 }));
     orb.addChild(new Graphics().circle(0, 0, 34).fill(COLOR.energy).stroke({ width: 3, color: 0x8a6d0a }));
     orb.addChild(this.label(`${p.energy}/${p.maxEnergy}`, 20, 0x2a2205, 0, 0, 0.5));
     this.root.addChild(orb);
@@ -338,41 +361,14 @@ export class CombatView {
   }
 
   private drawCard(instanceId: string, definitionId: string, x: number, y: number, w: number, h: number): void {
-    const def = CARDS[definitionId];
     const card = this.engine.state.hand.find((c) => c.instanceId === instanceId)!;
     const playable = this.engine.canPlay(card) && this.engine.state.outcome === 'ongoing';
     const selected = this.selectedInstanceId === instanceId;
 
-    const c = new Container();
+    const c = cardFace(definitionId, w, h, { selected });
     c.x = x;
     c.y = selected ? y - 16 : y;
     c.alpha = playable ? 1 : 0.5;
-
-    const base =
-      def.type === 'attack' ? COLOR.cardAttack : def.type === 'power' ? COLOR.cardPower : COLOR.cardSkill;
-    const bg = new Graphics().roundRect(0, 0, w, h, 10).fill(base).stroke({ width: 2, color: 0x000000, alpha: 0.5 });
-    if (selected) bg.stroke({ width: 3, color: COLOR.selected });
-    c.addChild(bg);
-
-    // cost circle
-    c.addChild(new Graphics().circle(20, 20, 15).fill(COLOR.costCircle));
-    c.addChild(this.label(`${def.cost}`, 18, COLOR.energy, 20, 20, 0.5));
-
-    // name
-    c.addChild(this.label(def.name, 16, COLOR.text, w / 2, 42, 0.5));
-
-    // divider
-    c.addChild(new Graphics().rect(14, 66, w - 28, 1).fill({ color: 0xffffff, alpha: 0.2 }));
-
-    // description (wrapped)
-    const desc = new Text({
-      text: def.description,
-      style: { fill: COLOR.text, fontSize: 13, fontFamily: FONT, align: 'center', wordWrap: true, wordWrapWidth: w - 24, lineHeight: 18 },
-    });
-    desc.anchor.set(0.5, 0);
-    desc.x = w / 2;
-    desc.y = 80;
-    c.addChild(desc);
 
     c.eventMode = 'static';
     c.cursor = playable ? 'pointer' : 'default';
@@ -385,7 +381,7 @@ export class CombatView {
     const x = layout.portrait ? layout.W - 200 : 1058;
     const y = layout.portrait ? 515 : 452;
     this.root.addChild(
-      this.button('结束回合', x, y, 182, 56, () => this.clickEndTurn(), enabled),
+      button(L.ui.endTurn, x, y, () => this.clickEndTurn(), { width: 182, height: 56, enabled }),
     );
   }
 
@@ -393,8 +389,8 @@ export class CombatView {
     if (this.messages.length === 0) return;
     const c = new Container();
     c.x = layout.portrait ? 20 : 980;
-    c.y = layout.portrait ? 340 : 250;
-    const shown = this.messages.slice(-5);
+    c.y = layout.portrait ? 368 : 300;
+    const shown = this.messages.slice(layout.portrait ? -4 : -5);
     shown.forEach((msg, i) => {
       const alpha = 0.4 + (0.6 * (i + 1)) / shown.length;
       c.addChild(this.label(msg, 14, COLOR.subtle, 0, i * 22, 0, alpha));
@@ -406,26 +402,21 @@ export class CombatView {
     const win = this.engine.state.outcome === 'victory';
     const c = new Container();
     const titleY = layout.portrait ? 448 : 280;
-    c.addChild(new Graphics().rect(0, 0, layout.W, layout.H).fill({ color: COLOR.overlay, alpha: 0.82 }));
-    c.addChild(this.label(win ? '胜利！' : '失败…', 64, win ? COLOR.hpPlayer : COLOR.hpEnemy, layout.W / 2, titleY, 0.5));
+    c.addChild(new Graphics().rect(0, 0, layout.W, layout.H).fill({ color: COLOR.overlay, alpha: 0.85 }));
+    c.addChild(this.label(win ? L.ui.victory : L.ui.defeat, 64, win ? COLOR.hpPlayer : COLOR.hpEnemy, layout.W / 2, titleY, 0.5));
     if (win) {
-      c.addChild(this.label(`剩余生命 ${this.engine.state.player.hp}`, 22, COLOR.text, layout.W / 2, titleY + 70, 0.5));
+      c.addChild(this.label(L.ui.hpLeft(this.engine.state.player.hp), 22, COLOR.text, layout.W / 2, titleY + 70, 0.5));
     }
     c.addChild(
-      this.button(win ? '继续' : '结束', layout.W / 2 - 100, titleY + 120, 200, 60, () =>
-        this.onCombatEnd(win, this.engine.state.player.hp), true),
+      button(win ? L.ui.continueRun : L.ui.finishRun, layout.W / 2 - 100, titleY + 120, () =>
+        this.onCombatEnd(win, this.engine.state.player.hp), { width: 200, height: 60 }),
     );
     this.root.addChild(c);
   }
 
   // ── small helpers ──
   private label(text: string, size: number, color: number, x = 0, y = 0, anchor = 0, alpha = 1): Text {
-    const t = new Text({ text, style: { fill: color, fontSize: size, fontFamily: FONT, fontWeight: '600' } });
-    t.anchor.set(anchor, anchor === 0.5 ? 0.5 : 0);
-    t.x = x;
-    t.y = y;
-    t.alpha = alpha;
-    return t;
+    return uiLabel(text, size, color, x, y, anchor, alpha);
   }
 
   private bar(x: number, y: number, w: number, h: number, cur: number, max: number, fill: number): Container {
@@ -433,7 +424,7 @@ export class CombatView {
     c.x = x;
     c.y = y;
     const frac = max > 0 ? Math.max(0, Math.min(1, cur / max)) : 0;
-    c.addChild(new Graphics().roundRect(0, 0, w, h, 5).fill(COLOR.hpBg));
+    c.addChild(new Graphics().roundRect(0, 0, w, h, 5).fill(COLOR.hpBg).stroke({ width: 1, color: 0x000000, alpha: 0.4 }));
     if (frac > 0) c.addChild(new Graphics().roundRect(0, 0, w * frac, h, 5).fill(fill));
     c.addChild(this.label(`${cur}/${max}`, 13, COLOR.text, w / 2, h / 2, 0.5));
     return c;
@@ -443,7 +434,7 @@ export class CombatView {
     const c = new Container();
     c.x = x;
     c.y = y;
-    c.addChild(new Graphics().roundRect(0, 0, 34, 22, 5).fill(COLOR.block));
+    c.addChild(new Graphics().roundRect(0, 0, 34, 22, 5).fill(COLOR.block).stroke({ width: 1, color: 0xffffff, alpha: 0.25 }));
     c.addChild(this.label(`${amount}`, 14, 0xffffff, 17, 11, 0.5));
     return c;
   }
@@ -455,13 +446,12 @@ export class CombatView {
     let cx = 0;
     for (const s of statuses) {
       if (s.stacks <= 0) continue;
-      const meta = STATUS_META[s.id];
-      const txt = `${meta.short}${s.stacks}`;
+      const txt = `${statusShort(s.id)}${s.stacks}`;
       const label = this.label(txt, 13, 0xffffff, 0, 0, 0);
       const pillW = label.width + 14;
       const pill = new Container();
       pill.x = cx;
-      pill.addChild(new Graphics().roundRect(0, 0, pillW, 20, 6).fill(meta.color));
+      pill.addChild(new Graphics().roundRect(0, 0, pillW, 20, 6).fill(STATUS_COLORS[s.id]));
       label.x = 7;
       label.y = 3;
       pill.addChild(label);
@@ -471,26 +461,11 @@ export class CombatView {
     return c;
   }
 
-  private button(label: string, x: number, y: number, w: number, h: number, onClick: () => void, enabled: boolean): Container {
-    const c = new Container();
-    c.x = x;
-    c.y = y;
-    c.alpha = enabled ? 1 : 0.45;
-    c.addChild(new Graphics().roundRect(0, 0, w, h, 10).fill(COLOR.button).stroke({ width: 2, color: 0x000000, alpha: 0.4 }));
-    c.addChild(this.label(label, 20, COLOR.buttonText, w / 2, h / 2, 0.5));
-    if (enabled) {
-      c.eventMode = 'static';
-      c.cursor = 'pointer';
-      c.on('pointertap', onClick);
-    }
-    return c;
-  }
-
   // Estimated telegraph damage: accounts for enemy strength/weak and player
   // vulnerable, mirroring the resolver so the number the player sees is honest.
   private intentText(enemy: EnemyState): { label: string; color: number } {
     const move = enemy.nextMove;
-    if (!move) return { label: '?', color: 0x888888 };
+    if (!move) return { label: L.ui.intentUnknown, color: 0x888888 };
     let dmg = 0;
     let buff = false;
     let debuff = false;
@@ -499,9 +474,9 @@ export class CombatView {
       else if (eff.kind === 'gainBlock') buff = true;
       else if (eff.kind === 'applyStatus') eff.target === 'self' ? (buff = true) : (debuff = true);
     }
-    if (dmg > 0) return { label: `攻击 ${dmg}`, color: 0xff6b6b };
-    if (buff) return { label: '强化', color: 0x6bd0ff };
-    if (debuff) return { label: '弱化你', color: 0xffd06b };
+    if (dmg > 0) return { label: L.ui.intentAttack(dmg), color: 0xff6b6b };
+    if (buff) return { label: L.ui.intentBuff, color: 0x6bd0ff };
+    if (debuff) return { label: L.ui.intentDebuff, color: 0xffd06b };
     return { label: move.id, color: 0xcccccc };
   }
 

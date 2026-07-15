@@ -40,6 +40,10 @@ vi.mock('pixi.js', () => {
     roundRect(): this { return this; }
     rect(): this { return this; }
     circle(): this { return this; }
+    ellipse(): this { return this; }
+    poly(): this { return this; }
+    moveTo(): this { return this; }
+    lineTo(): this { return this; }
     fill(): this { return this; }
     stroke(): this { return this; }
   }

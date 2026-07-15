@@ -1,18 +1,12 @@
 import { Container, Graphics } from 'pixi.js';
-import { CARDS } from '@/data/cards';
-import { RELICS } from '@/data/relics';
 import { layout } from '@/render/layout';
-import { label, wrappedText, button, panel, UI } from '@/render/ui';
+import { L, relicName, relicDesc } from '@/i18n';
+import { label, button, UI } from '@/render/ui';
+import { cardFace } from '@/render/cardArt';
 
 // RewardView: after a battle, choose one of three cards to add to the deck, or
-// skip. Reads a list of card definition ids; calls back with the chosen id or
-// null (skip).
-
-const CARD_TYPE_COLOR: Record<string, number> = {
-  attack: 0x8a2f2f,
-  skill: 0x2f6b8a,
-  power: 0x6b3f8a,
-};
+// skip. Uses the shared cardFace renderer so reward cards look exactly like
+// they will in hand. Calls back with the chosen id or null (skip).
 
 export class RewardView {
   readonly root = new Container();
@@ -26,20 +20,28 @@ export class RewardView {
   render(): void {
     this.root.removeChildren();
     this.root.addChild(new Graphics().rect(0, 0, layout.W, layout.H).fill(UI.overlay));
-    this.root.addChild(label('战斗胜利 — 选择一张卡牌', layout.portrait ? 26 : 32, UI.accent, layout.W / 2, 80, 0.5));
+    this.root.addChild(label(L.ui.rewardTitle, layout.portrait ? 26 : 32, UI.gold, layout.W / 2, 80, 0.5));
 
     // elite relic drop announcement
     if (this.droppedRelic) {
-      const def = RELICS[this.droppedRelic];
-      if (def) {
-        this.root.addChild(label(`获得遗物：${def.name} — ${def.description}`, layout.portrait ? 14 : 18, UI.good, layout.W / 2, 130, 0.5));
-      }
+      this.root.addChild(
+        label(
+          L.ui.relicDrop(relicName(this.droppedRelic), relicDesc(this.droppedRelic)),
+          layout.portrait ? 14 : 18,
+          UI.good,
+          layout.W / 2,
+          130,
+          0.5,
+        ),
+      );
     }
 
     const cardW = 190;
     const cardH = 260;
     // portrait: 3 cards of 190 + gaps must fit 720 → tighten the gap
-    const gap = layout.portrait ? Math.min(40, (layout.W - 40 - this.choices.length * cardW) / Math.max(1, this.choices.length - 1)) : 40;
+    const gap = layout.portrait
+      ? Math.min(40, (layout.W - 40 - this.choices.length * cardW) / Math.max(1, this.choices.length - 1))
+      : 40;
     const totalW = this.choices.length * cardW + (this.choices.length - 1) * gap;
     let x = (layout.W - totalW) / 2;
     const y = layout.portrait ? 320 : 200;
@@ -49,38 +51,18 @@ export class RewardView {
     }
 
     this.root.addChild(
-      button('跳过', layout.W / 2 - 90, y + cardH + 50, () => this.onChoose(null), { width: 180, color: 0x555a6e }),
+      button(L.ui.skip, layout.W / 2 - 90, y + cardH + 50, () => this.onChoose(null), { width: 180, color: 0x2a3352 }),
     );
   }
 
   private drawRewardCard(id: string, x: number, y: number, w: number, h: number): Container {
-    const def = CARDS[id];
-    const c = new Container();
+    const c = cardFace(id, w, h);
     c.x = x;
     c.y = y;
-
-    const base = CARD_TYPE_COLOR[def.type] ?? UI.panel;
-    c.addChild(panel(w, h, base, 12));
-    c.addChild(new Graphics().roundRect(0, 0, w, h, 12).stroke({ width: 2, color: 0x000000, alpha: 0.5 }));
-
-    // cost
-    c.addChild(new Graphics().circle(24, 24, 17).fill(0x11131a));
-    c.addChild(label(`${def.cost}`, 20, UI.accent, 24, 24, 0.5));
-
-    // name
-    c.addChild(label(def.name, 18, UI.text, w / 2, 54, 0.5));
-    c.addChild(new Graphics().rect(16, 82, w - 32, 1).fill({ color: 0xffffff, alpha: 0.2 }));
-
-    // description
-    c.addChild(wrappedText(def.description, 14, UI.text, w - 28, w / 2, 100, 'center'));
-
-    // type tag
-    c.addChild(label(def.type.toUpperCase(), 12, UI.subtle, w / 2, h - 28, 0.5));
-
     c.eventMode = 'static';
     c.cursor = 'pointer';
     c.on('pointertap', () => this.onChoose(id));
-    // hover feedback
+    // hover feedback (desktop)
     c.on('pointerover', () => (c.y = y - 10));
     c.on('pointerout', () => (c.y = y));
     return c;

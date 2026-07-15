@@ -1,16 +1,19 @@
 import { Application, Container } from 'pixi.js';
 import { App } from '@/render/app';
 import { layout, updateLayout } from '@/render/layout';
+import { Starfield } from '@/render/starfield';
+import { UI } from '@/render/ui';
 
-// App entry: boots PixiJS, mounts the top-level App (which owns the run FSM and
-// swaps between map / combat / reward / campfire views), and scales the
-// orientation-aware design stage (landscape 1280x720, portrait 720x1280) to
-// fit the window. Rotating a phone re-renders the active view in place.
+// App entry: boots PixiJS, mounts the persistent starfield backdrop and the
+// top-level App (which owns the run FSM and swaps between map / combat /
+// reward / campfire views), and scales the orientation-aware design stage
+// (landscape 1280x720, portrait 720x1280) to fit the window. Rotating a phone
+// rebuilds the backdrop and re-renders the active view in place.
 
 async function main(): Promise<void> {
   const app = new Application();
   await app.init({
-    background: 0x12131a,
+    background: UI.bgDeep,
     resizeTo: window,
     antialias: true,
     autoDensity: true,
@@ -28,6 +31,11 @@ async function main(): Promise<void> {
   // Pick the initial orientation BEFORE the first render.
   updateLayout(app.screen.width, app.screen.height);
 
+  const starfield = new Starfield();
+  starfield.build();
+  starfield.start();
+  stage.addChild(starfield.root);
+
   const game = new App();
   stage.addChild(game.root);
   game.start();
@@ -41,7 +49,10 @@ async function main(): Promise<void> {
 
   app.renderer.on('resize', () => {
     const orientationChanged = updateLayout(app.screen.width, app.screen.height);
-    if (orientationChanged) game.rerender();
+    if (orientationChanged) {
+      starfield.build();
+      game.rerender();
+    }
     fit();
   });
   fit();
