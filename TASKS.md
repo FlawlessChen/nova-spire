@@ -19,25 +19,27 @@
 - [x] 交互接线：出牌/选目标/结束回合
 - [x] 渲染交互测试（mock PixiJS）
 
-## 🚧 M3 — Run 旅程循环（进行中，当前优先级）
+## ✅ M3 — Run 旅程循环（完成）
 纯逻辑层（不依赖 Pixi，可序列化，种子化）：
-- [ ] RunState 类型 + 地图节点/边（src/types/run.ts）
-- [ ] 分层 DAG 地图生成（连通性保证）（src/game/mapGenerator.ts）
-- [ ] RunManager：旅程 FSM（进入节点→战斗→奖励→前进）（src/game/runManager.ts）
-- [ ] 遭遇/奖励数据池（src/data/encounters.ts）
-- [ ] 战斗奖励三选一加牌
-- [ ] 篝火节点（休息回血）
-- [ ] Boss 节点收尾（胜利=通关）
-- [ ] localStorage 存档 / 续玩
-- [ ] Run 逻辑单元测试（连通性/全流程通关/存读档/种子复现）
+- [x] RunState 类型 + 地图节点/边（src/types/run.ts）
+- [x] 分层 DAG 地图生成（连通性保证）（src/game/mapGenerator.ts）
+- [x] RunManager：旅程 FSM（进入节点→战斗→奖励→前进）（src/game/runManager.ts）
+- [x] 遭遇/奖励数据池（src/data/encounters.ts）
+- [x] 战斗奖励三选一加牌
+- [x] 篝火节点（休息回血）
+- [x] Boss 节点收尾（胜利=通关）
+- [x] localStorage 存档 / 续玩（src/game/saveManager.ts）
+- [x] Run 逻辑单元测试（连通性/全流程通关/存读档/种子复现）
 
 渲染层：
-- [ ] 地图界面（节点+连线，可点选可达节点）（src/render/mapView.ts）
-- [ ] 奖励界面（三选一 / 跳过）（src/render/rewardView.ts）
-- [ ] 顶层 App FSM 串联地图↔战斗↔奖励↔篝火↔结算（src/render/app.ts）
-- [ ] 战斗结束回调改造（CombatView：onCombatEnd）
+- [x] 地图界面（节点+连线，可点选可达节点）（src/render/mapView.ts）
+- [x] 奖励界面（三选一 / 跳过）（src/render/rewardView.ts）
+- [x] 篝火界面（src/render/campfireView.ts）
+- [x] 顶层 App FSM 串联地图↔战斗↔奖励↔篝火↔结算（src/render/app.ts）
+- [x] 共享 UI 原语（src/render/ui.ts）
+- [x] 战斗结束回调改造（CombatView：onCombatEnd）
 
-## M4 — 内容与平衡
+## M4 — 内容与平衡（下一步）
 - [ ] 扩充卡池（20+）与敌人（含 2 种精英）
 - [ ] 遗物系统（EventBus 订阅者，数据驱动）
 - [ ] 数值平衡（一局可通关但有压力）
@@ -52,3 +54,4 @@
 - 2026-07-15: M1 引擎核心全部完成，9 单测通过，建立 git 基线。
 - 2026-07-15: M2 渲染层落地，单场战斗可玩；16 测试通过，生产构建通过。
 - 2026-07-15: 制定 M3 Run 旅程循环规划，开始实现旅程逻辑层。
+- 2026-07-15: M3 完成——Run 逻辑层（地图生成/RunManager/存档）+ 渲染层（地图/奖励/篝火/顶层 App FSM）全部落地。44 测试通过，生产构建通过，dev 冒烟无误。**MVP 核心循环打通：地图探索 → 战斗 → 三选一加牌 → 篝火 → Boss → 通关/失败，可存档续玩。**

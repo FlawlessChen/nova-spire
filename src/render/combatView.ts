@@ -52,7 +52,7 @@ export class CombatView {
 
   constructor(
     private engine: CombatEngine,
-    private onRestart: () => void,
+    private onCombatEnd: (won: boolean, playerHp: number) => void,
   ) {
     this.engine.bus.subscribe((e) => this.onEvent(e));
   }
@@ -300,8 +300,14 @@ export class CombatView {
     const win = this.engine.state.outcome === 'victory';
     const c = new Container();
     c.addChild(new Graphics().rect(0, 0, DESIGN_W, DESIGN_H).fill({ color: COLOR.overlay, alpha: 0.82 }));
-    c.addChild(this.label(win ? '胜利！' : '失败…', 64, win ? COLOR.hpPlayer : COLOR.hpEnemy, 640, 300, 0.5));
-    c.addChild(this.button('再来一局', 540, 400, 200, 60, () => this.onRestart(), true));
+    c.addChild(this.label(win ? '胜利！' : '失败…', 64, win ? COLOR.hpPlayer : COLOR.hpEnemy, 640, 280, 0.5));
+    if (win) {
+      c.addChild(this.label(`剩余生命 ${this.engine.state.player.hp}`, 22, COLOR.text, 640, 350, 0.5));
+    }
+    c.addChild(
+      this.button(win ? '继续' : '结束', 540, 400, 200, 60, () =>
+        this.onCombatEnd(win, this.engine.state.player.hp), true),
+    );
     this.root.addChild(c);
   }
 
