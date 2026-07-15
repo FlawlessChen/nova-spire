@@ -14,11 +14,8 @@ jobs:
         with:
           node-version: 20
           cache: npm
-      # The runner's bundled npm 10.x can crash on `npm ci` ("Exit handler
-      # never called"); pin a known-good npm and fall back to install if the
-      # clean install still fails for any reason.
-      - run: npm install -g npm@10.9.2
-      - run: npm ci || npm install
+          registry-url: https://registry.npmjs.org
+      - run: npm ci
       - run: npm test
       - run: npm run build
       - uses: actions/upload-artifact@v4
