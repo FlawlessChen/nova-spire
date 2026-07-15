@@ -2,6 +2,7 @@ import { Container } from 'pixi.js';
 import { RunManager } from '@/game/runManager';
 import { SaveManager } from '@/game/saveManager';
 import { CombatEngine } from '@/game/combatEngine';
+import { RelicEngine } from '@/game/relicEngine';
 import { CombatView } from '@/render/combatView';
 import { MapView } from '@/render/mapView';
 import { RewardView } from '@/render/rewardView';
@@ -117,10 +118,15 @@ export class App {
 
   private showCombat(): void {
     const engine = new CombatEngine(this.mgr.combatConfigForCurrentNode());
+    // Wire the player's relics as event-bus subscribers BEFORE start(), so
+    // onCombatStart relics fire on turn 1. The engine stays unaware of relics.
+    const relicEngine = new RelicEngine(engine, this.mgr.state.relics);
+    relicEngine.attach(engine.bus);
     const view = new CombatView(engine, (won, playerHp) => {
+      relicEngine.detach();
       this.mgr.resolveCombat(won, playerHp);
       this.syncView();
-    });
+    }, this.mgr.state.relics);
     engine.start();
     this.setActive(view);
   }
@@ -130,7 +136,7 @@ export class App {
     const view = new RewardView(choices, (cardId) => {
       this.mgr.chooseReward(cardId);
       this.syncView();
-    });
+    }, this.mgr.state.pendingRelic);
     this.setActive(view);
   }
 

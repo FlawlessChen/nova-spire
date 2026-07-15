@@ -1,6 +1,7 @@
 import { Container, Graphics } from 'pixi.js';
 import type { RunManager } from '@/game/runManager';
 import type { MapNode, NodeType } from '@/types/run';
+import { RELICS } from '@/data/relics';
 import { DESIGN_W, DESIGN_H } from '@/render/combatView';
 import { label, button, UI } from '@/render/ui';
 
@@ -35,6 +36,10 @@ export class MapView {
     this.root.addChild(label(`生命 ${state.playerHp}/${state.playerMaxHp}`, 20, UI.good, 40, 28));
     this.root.addChild(label(`金币 ${state.gold}`, 20, UI.accent, 40, 56));
     this.root.addChild(label(`卡组 ${state.deck.length} 张`, 18, UI.subtle, 40, 84));
+    if (state.relics.length > 0) {
+      const names = state.relics.map((id) => RELICS[id]?.name ?? id).join('、');
+      this.root.addChild(label(`遗物：${names}`, 15, UI.accent, 40, 112));
+    }
 
     const reachable = new Set(this.mgr.availableNodes().map((n) => n.id));
     const visited = new Set(state.visitedNodeIds);

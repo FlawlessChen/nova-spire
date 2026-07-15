@@ -4,6 +4,7 @@ import type { EnemyState, GameEvent, StatusInstance, StatusId } from '@/types';
 import { PLAYER_ID } from '@/types';
 import { CARDS } from '@/data/cards';
 import { ENEMIES } from '@/data/enemies';
+import { RELICS } from '@/data/relics';
 import { getStatusStacks } from '@/game/entities';
 import { WEAK_MULTIPLIER, VULNERABLE_MULTIPLIER } from '@/data/statuses';
 
@@ -53,6 +54,7 @@ export class CombatView {
   constructor(
     private engine: CombatEngine,
     private onCombatEnd: (won: boolean, playerHp: number) => void,
+    private relicIds: string[] = [],
   ) {
     this.engine.bus.subscribe((e) => this.onEvent(e));
   }
@@ -142,6 +144,24 @@ export class CombatView {
     const discard = this.label(`弃牌堆 ${state.discardPile.length}`, 15, COLOR.subtle, 1250, 692);
     discard.anchor.set(1, 0);
     this.root.addChild(discard);
+
+    // relic bar: small pills across the top-left
+    let rx = 30;
+    for (const id of this.relicIds) {
+      const def = RELICS[id];
+      if (!def) continue;
+      const name = this.label(def.name, 13, COLOR.text, 0, 0, 0);
+      const pillW = name.width + 16;
+      const pill = new Container();
+      pill.x = rx;
+      pill.y = 14;
+      pill.addChild(new Graphics().roundRect(0, 0, pillW, 22, 6).fill({ color: 0x3a3520 }).stroke({ width: 1, color: COLOR.energy, alpha: 0.6 }));
+      name.x = 8;
+      name.y = 4;
+      pill.addChild(name);
+      this.root.addChild(pill);
+      rx += pillW + 8;
+    }
   }
 
   private drawEnemies(): void {

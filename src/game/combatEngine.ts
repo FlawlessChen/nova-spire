@@ -2,6 +2,7 @@ import type {
   CardDefinition,
   CardInstance,
   CombatState,
+  EffectDefinition,
   EnemyDefinition,
   EnemyMove,
   EnemyState,
@@ -91,7 +92,6 @@ export class CombatEngine {
 
   // ── lifecycle ──
   start(): void {
-    this.bus.publish({ type: 'onCombatStart' });
     this.beginPlayerTurn();
   }
 
@@ -100,6 +100,11 @@ export class CombatEngine {
     this.state.phase = 'playerTurn';
     this.state.player.energy = this.state.player.maxEnergy;
     this.state.player.block = 0;
+
+    // onCombatStart fires on turn 1, AFTER block is reset, so combat-start
+    // relics (e.g. +block) aren't wiped by the turn's block reset.
+    if (this.state.turn === 1) this.bus.publish({ type: 'onCombatStart' });
+
     this.bus.publish({ type: 'onTurnStart', turn: this.state.turn, side: 'player' });
 
     tickStatuses(this.state, PLAYER_ID, this.bus);
@@ -174,6 +179,21 @@ export class CombatEngine {
         applyIntent(this.state, intent, this.bus);
       }
     }
+  }
+
+  /**
+   * Apply a list of authoring-layer effects from an external source (e.g. a
+   * relic) as if cast by `sourceId`. Routes through the SAME resolve→execute
+   * path as cards and enemy moves, so effect logic stays in one place. Returns
+   * silently if combat has ended.
+   */
+  applyEffects(effects: EffectDefinition[], sourceId: string = PLAYER_ID): void {
+    if (this.state.outcome !== 'ongoing') return;
+    const ctx: PlayContext = { sourceId };
+    const intents = resolveEffects(effects, ctx, this.state, this.rng);
+    this.executeIntents(intents);
+    this.removeDeadEnemies();
+    this.checkOutcome();
   }
 
   // ── ending the turn / enemy turn ──

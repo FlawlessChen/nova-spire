@@ -91,6 +91,88 @@ export const CARDS: Record<string, CardDefinition> = {
       { kind: 'drawCards', value: 1 },
     ],
   },
+  // ── M4 additions: deeper mechanics, all reusing existing effect kinds ──
+  twinStrike: {
+    id: 'twinStrike', name: 'Twin Strike', cost: 1,
+    type: 'attack', rarity: 'common', targetMode: 'enemy',
+    description: 'Deal 5 damage twice.',
+    effects: [
+      { kind: 'dealDamage', target: 'chosenEnemy', value: 5 },
+      { kind: 'dealDamage', target: 'chosenEnemy', value: 5 },
+    ],
+  },
+  rampage: {
+    id: 'rampage', name: 'Rampage', cost: 2,
+    type: 'attack', rarity: 'uncommon', targetMode: 'enemy',
+    description: 'Deal 10 damage. Gain 3 Strength.',
+    effects: [
+      { kind: 'dealDamage', target: 'chosenEnemy', value: 10 },
+      { kind: 'applyStatus', target: 'self', status: 'strength', amount: 3 },
+    ],
+  },
+  whirlwind: {
+    id: 'whirlwind', name: 'Whirlwind', cost: 2,
+    type: 'attack', rarity: 'uncommon', targetMode: 'none',
+    description: 'Deal 8 damage to ALL enemies. Apply 1 Vulnerable to all.',
+    effects: [
+      { kind: 'dealDamage', target: 'allEnemies', value: 8 },
+      { kind: 'applyStatus', target: 'allEnemies', status: 'vulnerable', amount: 1 },
+    ],
+  },
+  toxicShiv: {
+    id: 'toxicShiv', name: 'Toxic Shiv', cost: 0,
+    type: 'attack', rarity: 'uncommon', targetMode: 'enemy',
+    description: 'Deal 3 damage. Apply 2 Poison.',
+    effects: [
+      { kind: 'dealDamage', target: 'chosenEnemy', value: 3 },
+      { kind: 'applyStatus', target: 'chosenEnemy', status: 'poison', amount: 2 },
+    ],
+  },
+  battleTrance: {
+    id: 'battleTrance', name: 'Battle Trance', cost: 0,
+    type: 'skill', rarity: 'uncommon', targetMode: 'self',
+    description: 'Draw 3 cards.',
+    effects: [{ kind: 'drawCards', value: 3 }],
+  },
+  bloodletting: {
+    id: 'bloodletting', name: 'Bloodletting', cost: 0,
+    type: 'skill', rarity: 'uncommon', targetMode: 'self',
+    description: 'Gain 2 Energy.',
+    effects: [{ kind: 'gainEnergy', value: 2 }],
+  },
+  ironclad: {
+    id: 'ironclad', name: 'Ironclad', cost: 2,
+    type: 'skill', rarity: 'uncommon', targetMode: 'self',
+    description: 'Gain 14 Block.',
+    effects: [{ kind: 'gainBlock', target: 'self', value: 14 }],
+  },
+  perfectedStrike: {
+    id: 'perfectedStrike', name: 'Perfected Strike', cost: 2,
+    type: 'attack', rarity: 'uncommon', targetMode: 'enemy',
+    description: 'Deal 12 damage. Gain 6 Block.',
+    effects: [
+      { kind: 'dealDamage', target: 'chosenEnemy', value: 12 },
+      { kind: 'gainBlock', target: 'self', value: 6 },
+    ],
+  },
+  cripple: {
+    id: 'cripple', name: 'Cripple', cost: 1,
+    type: 'skill', rarity: 'uncommon', targetMode: 'enemy',
+    description: 'Apply 2 Weak and 2 Vulnerable.',
+    effects: [
+      { kind: 'applyStatus', target: 'chosenEnemy', status: 'weak', amount: 2 },
+      { kind: 'applyStatus', target: 'chosenEnemy', status: 'vulnerable', amount: 2 },
+    ],
+  },
+  reaper: {
+    id: 'reaper', name: 'Reaper', cost: 2,
+    type: 'attack', rarity: 'rare', targetMode: 'none',
+    description: 'Deal 8 damage to ALL enemies. Heal 8.',
+    effects: [
+      { kind: 'dealDamage', target: 'allEnemies', value: 8 },
+      { kind: 'heal', target: 'self', value: 8 },
+    ],
+  },
 };
 
 // The starting deck: 5 Strike, 4 Defend, 1 Bash — classic deckbuilder opener.
@@ -98,4 +180,14 @@ export const STARTING_DECK: string[] = [
   'strike', 'strike', 'strike', 'strike', 'strike',
   'defend', 'defend', 'defend', 'defend',
   'bash',
+];
+
+// Cards that can appear as battle rewards — everything except the basic starter
+// cards, so the deck grows toward more interesting options. Content lives in
+// the data layer; the run logic only references this list, never card ids.
+export const REWARD_POOL: string[] = [
+  'poisonStab', 'cleave', 'ironWave', 'flex', 'quickDraw',
+  'intimidate', 'secondWind', 'heavyBlow', 'shrugItOff',
+  'twinStrike', 'rampage', 'whirlwind', 'toxicShiv', 'battleTrance',
+  'bloodletting', 'ironclad', 'perfectedStrike', 'cripple', 'reaper',
 ];

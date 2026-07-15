@@ -59,6 +59,52 @@ export const ENEMIES: Record<string, EnemyDefinition> = {
       },
     ],
   },
+  // ── M4 elites: tougher, with threatening intent combos ──
+  gremlinNob: {
+    id: 'gremlinNob', name: 'Gremlin Nob', ai: 'random',
+    maxHp: [58, 64],
+    moves: [
+      {
+        id: 'rush', weight: 45,
+        intents: [{ kind: 'dealDamage', target: 'opponent', value: 14 }],
+      },
+      {
+        id: 'skullBash', weight: 30,
+        intents: [
+          { kind: 'dealDamage', target: 'opponent', value: 8 },
+          { kind: 'applyStatus', target: 'opponent', status: 'vulnerable', amount: 2 },
+        ],
+      },
+      {
+        id: 'bellow', weight: 25,
+        intents: [{ kind: 'applyStatus', target: 'self', status: 'strength', amount: 3 }],
+      },
+    ],
+  },
+  sentry: {
+    id: 'sentry', name: 'Sentry', ai: 'random',
+    maxHp: [40, 44],
+    moves: [
+      {
+        id: 'beam', weight: 55,
+        intents: [{ kind: 'dealDamage', target: 'opponent', value: 9 }],
+      },
+      {
+        id: 'bolt', weight: 25,
+        intents: [
+          { kind: 'dealDamage', target: 'opponent', value: 5 },
+          { kind: 'applyStatus', target: 'opponent', status: 'weak', amount: 2 },
+        ],
+      },
+      {
+        id: 'harden', weight: 20,
+        intents: [
+          { kind: 'gainBlock', target: 'self', value: 12 },
+          { kind: 'dealDamage', target: 'opponent', value: 4 },
+        ],
+      },
+    ],
+  },
   // Boss
   guardian: {
     id: 'guardian', name: 'The Guardian', ai: 'random',
@@ -66,7 +112,7 @@ export const ENEMIES: Record<string, EnemyDefinition> = {
     moves: [
       {
         id: 'slam', weight: 45,
-        intents: [{ kind: 'dealDamage', target: 'opponent', value: 16 }],
+        intents: [{ kind: 'dealDamage', target: 'opponent', value: 15 }],
       },
       {
         id: 'fierceBash', weight: 30,

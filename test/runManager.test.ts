@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { RunManager } from '@/game/runManager';
 import { CombatEngine } from '@/game/combatEngine';
+import { RELIC_POOL } from '@/data/relics';
 import type { RunState } from '@/types/run';
 
 // RunManager: the journey FSM. The headline test drives a WHOLE run to a boss
@@ -159,5 +160,37 @@ describe('RunManager', () => {
     mgr.enterNode(node.id);
     expect(count).toBeGreaterThan(0);
     expect(last).not.toBeNull();
+  });
+
+  it('drops a relic when an elite is defeated', () => {
+    const mgr = RunManager.newRun(1);
+    // force an elite context: enter any battle node, then pretend it's an elite
+    const node = mgr.availableNodes()[0];
+    mgr.enterNode(node.id);
+    mgr.state.map.nodes[node.id].type = 'elite';
+    mgr.resolveCombat(true, 50);
+    expect(mgr.state.relics.length).toBe(1);
+    expect(mgr.state.pendingRelic).toBe(mgr.state.relics[0]);
+  });
+
+  it('never drops a duplicate relic', () => {
+    const mgr = RunManager.newRun(2);
+    const node = mgr.availableNodes()[0];
+    mgr.enterNode(node.id);
+    mgr.state.map.nodes[node.id].type = 'elite';
+    // pre-own every relic except one
+    mgr.state.relics = RELIC_POOL.slice(0, -1);
+    mgr.resolveCombat(true, 50);
+    const last = RELIC_POOL[RELIC_POOL.length - 1];
+    expect(mgr.state.relics.filter((r) => r === last).length).toBe(1);
+    // owning ALL relics -> no drop, no crash
+    const mgr2 = RunManager.newRun(3);
+    const node2 = mgr2.availableNodes()[0];
+    mgr2.enterNode(node2.id);
+    mgr2.state.map.nodes[node2.id].type = 'elite';
+    mgr2.state.relics = RELIC_POOL.slice();
+    mgr2.resolveCombat(true, 50);
+    expect(mgr2.state.relics.length).toBe(RELIC_POOL.length);
+    expect(mgr2.state.pendingRelic).toBeNull();
   });
 });

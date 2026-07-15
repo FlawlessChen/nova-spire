@@ -1,5 +1,6 @@
 import { Container, Graphics } from 'pixi.js';
 import { CARDS } from '@/data/cards';
+import { RELICS } from '@/data/relics';
 import { DESIGN_W, DESIGN_H } from '@/render/combatView';
 import { label, wrappedText, button, panel, UI } from '@/render/ui';
 
@@ -19,12 +20,21 @@ export class RewardView {
   constructor(
     private choices: string[],
     private onChoose: (cardId: string | null) => void,
+    private droppedRelic: string | null = null,
   ) {}
 
   render(): void {
     this.root.removeChildren();
     this.root.addChild(new Graphics().rect(0, 0, DESIGN_W, DESIGN_H).fill(UI.overlay));
     this.root.addChild(label('战斗胜利 — 选择一张卡牌', 32, UI.accent, DESIGN_W / 2, 80, 0.5));
+
+    // elite relic drop announcement
+    if (this.droppedRelic) {
+      const def = RELICS[this.droppedRelic];
+      if (def) {
+        this.root.addChild(label(`获得遗物：${def.name} — ${def.description}`, 18, UI.good, DESIGN_W / 2, 130, 0.5));
+      }
+    }
 
     const cardW = 190;
     const cardH = 260;

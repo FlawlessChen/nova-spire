@@ -107,6 +107,7 @@ function isSaveData(v: unknown): v is SaveData {
     typeof run.rngState === 'number' &&
     typeof run.phase === 'string' &&
     typeof run.map === 'object' &&
-    Array.isArray(run.deck)
+    Array.isArray(run.deck) &&
+    Array.isArray(run.relics)
   );
 }

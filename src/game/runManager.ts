@@ -3,7 +3,8 @@ import type { CombatConfig } from '@/game/combatEngine';
 import { SeededRNG } from '@/core/rng';
 import { generateMap, type MapGenConfig } from '@/game/mapGenerator';
 import { ENCOUNTERS } from '@/data/encounters';
-import { STARTING_DECK } from '@/data/cards';
+import { STARTING_DECK, REWARD_POOL } from '@/data/cards';
+import { RELIC_POOL } from '@/data/relics';
 
 // RunManager: the journey FSM that sits above CombatEngine. It owns RunState
 // transitions — generate map, enter a node, hand out a combat config, apply the
@@ -21,12 +22,8 @@ const HAND_SIZE = 5;
 const CAMPFIRE_HEAL_FRACTION = 0.3;
 const REWARD_CHOICES = 3;
 
-// Cards that can appear as battle rewards (everything except the basic
-// starting cards — the deck grows with more interesting options).
-export const REWARD_POOL: string[] = [
-  'poisonStab', 'cleave', 'ironWave', 'flex', 'quickDraw',
-  'intimidate', 'secondWind', 'heavyBlow', 'shrugItOff',
-];
+// Re-export the reward pool (defined in the data layer) for convenience.
+export { REWARD_POOL };
 
 export type RunChangeListener = (state: RunState) => void;
 
@@ -54,9 +51,11 @@ export class RunManager {
       playerHp: PLAYER_MAX_HP,
       playerMaxHp: PLAYER_MAX_HP,
       deck: STARTING_DECK.slice(),
+      relics: [],
       gold: 0,
       nodesCleared: 0,
       pendingReward: null,
+      pendingRelic: null,
       combatSeed: null,
     };
     const mgr = new RunManager(state, rng);
@@ -150,12 +149,23 @@ export class RunManager {
     }
 
     this.state.nodesCleared += 1;
-    this.state.gold += this.currentNode()?.type === 'elite' ? 25 : 15;
+    const nodeType = this.currentNode()?.type;
+    this.state.gold += nodeType === 'elite' ? 25 : 15;
 
-    if (this.currentNode()?.type === 'boss') {
+    if (nodeType === 'boss') {
       this.state.phase = 'won';
       this.sync();
       return;
+    }
+
+    // elites drop a relic (auto-granted; pendingRelic lets the UI announce it)
+    this.state.pendingRelic = null;
+    if (nodeType === 'elite') {
+      const relic = this.rollRelic();
+      if (relic) {
+        this.state.relics.push(relic);
+        this.state.pendingRelic = relic;
+      }
     }
 
     // offer a card reward
@@ -168,6 +178,14 @@ export class RunManager {
   private rollReward(): string[] {
     const pool = this.rng.shuffle(REWARD_POOL);
     return pool.slice(0, Math.min(REWARD_CHOICES, pool.length));
+  }
+
+  // Pick a relic the player doesn't already own, or null if they own them all.
+  private rollRelic(): string | null {
+    const owned = new Set(this.state.relics);
+    const available = RELIC_POOL.filter((id) => !owned.has(id));
+    if (available.length === 0) return null;
+    return this.rng.pick(this.rng.shuffle(available));
   }
 
   /** Take a card from the pending reward (or skip with null). Advances to map. */

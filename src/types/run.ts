@@ -50,9 +50,11 @@ export interface RunState {
   playerHp: number;
   playerMaxHp: number;
   deck: string[];                // card definition ids; grows through rewards
+  relics: string[];              // relic definition ids owned this run
   gold: number;
   nodesCleared: number;          // progress counter
   pendingReward: string[] | null;  // card choices offered after a battle
+  pendingRelic: string | null;   // relic dropped by an elite/boss, awaiting pickup
   combatSeed: number | null;     // seed for the in-progress combat (null outside combat)
 }
 

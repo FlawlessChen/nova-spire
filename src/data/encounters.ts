@@ -20,9 +20,11 @@ export const BATTLE_ENCOUNTERS: EncounterDefinition[] = [
 
 // Elites — tougher groups for 'elite' nodes.
 export const ELITE_ENCOUNTERS: EncounterDefinition[] = [
+  { id: 'gremlin-nob', enemies: ['gremlinNob'] },
+  { id: 'sentry-pair', enemies: ['sentry', 'sentry'] },
+  { id: 'nob-and-cultist', enemies: ['gremlinNob', 'cultist'] },
   { id: 'jawworm-duo', enemies: ['jawWorm', 'jawWorm'] },
-  { id: 'cultist-trio', enemies: ['cultist', 'cultist', 'cultist'] },
-  { id: 'jawworm-and-slime', enemies: ['jawWorm', 'slime', 'slime'] },
+  { id: 'sentry-trio', enemies: ['sentry', 'sentry', 'sentry'] },
 ];
 
 // The boss — fixed for MVP.
