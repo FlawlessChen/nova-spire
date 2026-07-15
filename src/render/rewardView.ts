@@ -1,7 +1,7 @@
 import { Container, Graphics } from 'pixi.js';
 import { CARDS } from '@/data/cards';
 import { RELICS } from '@/data/relics';
-import { DESIGN_W, DESIGN_H } from '@/render/combatView';
+import { layout } from '@/render/layout';
 import { label, wrappedText, button, panel, UI } from '@/render/ui';
 
 // RewardView: after a battle, choose one of three cards to add to the deck, or
@@ -25,30 +25,31 @@ export class RewardView {
 
   render(): void {
     this.root.removeChildren();
-    this.root.addChild(new Graphics().rect(0, 0, DESIGN_W, DESIGN_H).fill(UI.overlay));
-    this.root.addChild(label('战斗胜利 — 选择一张卡牌', 32, UI.accent, DESIGN_W / 2, 80, 0.5));
+    this.root.addChild(new Graphics().rect(0, 0, layout.W, layout.H).fill(UI.overlay));
+    this.root.addChild(label('战斗胜利 — 选择一张卡牌', layout.portrait ? 26 : 32, UI.accent, layout.W / 2, 80, 0.5));
 
     // elite relic drop announcement
     if (this.droppedRelic) {
       const def = RELICS[this.droppedRelic];
       if (def) {
-        this.root.addChild(label(`获得遗物：${def.name} — ${def.description}`, 18, UI.good, DESIGN_W / 2, 130, 0.5));
+        this.root.addChild(label(`获得遗物：${def.name} — ${def.description}`, layout.portrait ? 14 : 18, UI.good, layout.W / 2, 130, 0.5));
       }
     }
 
     const cardW = 190;
     const cardH = 260;
-    const gap = 40;
+    // portrait: 3 cards of 190 + gaps must fit 720 → tighten the gap
+    const gap = layout.portrait ? Math.min(40, (layout.W - 40 - this.choices.length * cardW) / Math.max(1, this.choices.length - 1)) : 40;
     const totalW = this.choices.length * cardW + (this.choices.length - 1) * gap;
-    let x = (DESIGN_W - totalW) / 2;
-    const y = 200;
+    let x = (layout.W - totalW) / 2;
+    const y = layout.portrait ? 320 : 200;
     for (const id of this.choices) {
       this.root.addChild(this.drawRewardCard(id, x, y, cardW, cardH));
       x += cardW + gap;
     }
 
     this.root.addChild(
-      button('跳过', DESIGN_W / 2 - 90, y + cardH + 50, () => this.onChoose(null), { width: 180, color: 0x555a6e }),
+      button('跳过', layout.W / 2 - 90, y + cardH + 50, () => this.onChoose(null), { width: 180, color: 0x555a6e }),
     );
   }
 

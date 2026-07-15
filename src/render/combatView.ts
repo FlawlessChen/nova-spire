@@ -8,14 +8,13 @@ import { RELICS } from '@/data/relics';
 import { getStatusStacks } from '@/game/entities';
 import { WEAK_MULTIPLIER, VULNERABLE_MULTIPLIER } from '@/data/statuses';
 import { playSound } from '@/render/sound';
+import { layout } from '@/render/layout';
 
 // PixiJS render layer. Reads CombatState and draws it; never mutates game state.
 // All player input flows back through CombatEngine methods. On any engine call
 // the view fully re-renders — combat is turn-based, so a full redraw per action
-// is simpler and plenty fast.
-
-export const DESIGN_W = 1280;
-export const DESIGN_H = 720;
+// is simpler and plenty fast. All coordinates come from the orientation-aware
+// `layout` singleton: landscape 1280x720, portrait (mobile) 720x1280.
 
 const FONT = 'system-ui, "Segoe UI", Roboto, sans-serif';
 
@@ -125,15 +124,17 @@ export class CombatView {
 
   // Approximate on-screen anchor of a combatant, mirroring drawPlayer/drawEnemies.
   private positionFor(entityId: string): { x: number; y: number } | null {
-    if (entityId === PLAYER_ID) return { x: 165, y: 500 };
+    if (entityId === PLAYER_ID) {
+      return layout.portrait ? { x: 145, y: 470 } : { x: 165, y: 500 };
+    }
     const enemies = this.engine.state.enemies;
     const idx = enemies.findIndex((e) => e.entityId === entityId);
     if (idx < 0) return null;
     const panelW = 200;
     const gap = 40;
     const totalW = enemies.length * panelW + (enemies.length - 1) * gap;
-    const x = (DESIGN_W - totalW) / 2 + idx * (panelW + gap) + panelW / 2;
-    return { x, y: 150 };
+    const x = (layout.W - totalW) / 2 + idx * (panelW + gap) + panelW / 2;
+    return { x, y: layout.portrait ? 240 : 150 };
   }
 
   private pushLog(msg: string): void {
@@ -206,16 +207,17 @@ export class CombatView {
 
   private drawHeader(): void {
     const state = this.engine.state;
-    this.root.addChild(this.label(`回合 ${state.turn}`, 24, COLOR.text, 640, 16, 0.5));
+    this.root.addChild(this.label(`回合 ${state.turn}`, 24, COLOR.text, layout.W / 2, 16, 0.5));
     this.root.addChild(
-      this.label(`抽牌堆 ${state.drawPile.length}`, 15, COLOR.subtle, 30, 692),
+      this.label(`抽牌堆 ${state.drawPile.length}`, 15, COLOR.subtle, 20, layout.H - 26),
     );
-    const discard = this.label(`弃牌堆 ${state.discardPile.length}`, 15, COLOR.subtle, 1250, 692);
+    const discard = this.label(`弃牌堆 ${state.discardPile.length}`, 15, COLOR.subtle, layout.W - 20, layout.H - 26);
     discard.anchor.set(1, 0);
     this.root.addChild(discard);
 
-    // relic bar: small pills across the top-left
-    let rx = 30;
+    // relic bar: small pills across the top-left (their own row in portrait)
+    let rx = layout.portrait ? 16 : 30;
+    const ry = layout.portrait ? 46 : 14;
     for (const id of this.relicIds) {
       const def = RELICS[id];
       if (!def) continue;
@@ -223,7 +225,7 @@ export class CombatView {
       const pillW = name.width + 16;
       const pill = new Container();
       pill.x = rx;
-      pill.y = 14;
+      pill.y = ry;
       pill.addChild(new Graphics().roundRect(0, 0, pillW, 22, 6).fill({ color: 0x3a3520 }).stroke({ width: 1, color: COLOR.energy, alpha: 0.6 }));
       name.x = 8;
       name.y = 4;
@@ -236,11 +238,17 @@ export class CombatView {
   private drawEnemies(): void {
     const enemies = this.engine.state.enemies;
     const panelW = 200;
-    const gap = 40;
+    // shrink the gap if a wide group wouldn't fit the design width
+    const baseGap = 40;
+    const gap =
+      enemies.length > 1
+        ? Math.min(baseGap, (layout.W - 20 - enemies.length * panelW) / (enemies.length - 1))
+        : baseGap;
     const totalW = enemies.length * panelW + (enemies.length - 1) * gap;
-    let x = (DESIGN_W - totalW) / 2;
+    let x = Math.max(10, (layout.W - totalW) / 2);
+    const y = layout.portrait ? 180 : 96;
     for (const enemy of enemies) {
-      this.drawEnemy(enemy, x, 96, panelW);
+      this.drawEnemy(enemy, x, y, panelW);
       x += panelW + gap;
     }
   }
@@ -288,7 +296,7 @@ export class CombatView {
   private drawPlayer(): void {
     const p = this.engine.state.player;
     const c = new Container();
-    c.x = 40;
+    c.x = layout.portrait ? 20 : 40;
     c.y = 470;
     const w = 250;
     const h = 150;
@@ -299,10 +307,11 @@ export class CombatView {
     c.addChild(this.statusRow(p.statuses, 16, 82));
     this.root.addChild(c);
 
-    // energy orb
+    // energy orb: floats over the panel corner in landscape, sits to the
+    // panel's right in portrait
     const orb = new Container();
-    orb.x = 175;
-    orb.y = 452;
+    orb.x = layout.portrait ? 330 : 175;
+    orb.y = layout.portrait ? 545 : 452;
     orb.addChild(new Graphics().circle(0, 0, 34).fill(COLOR.energy).stroke({ width: 3, color: 0x8a6d0a }));
     orb.addChild(this.label(`${p.energy}/${p.maxEnergy}`, 20, 0x2a2205, 0, 0, 0.5));
     this.root.addChild(orb);
@@ -313,12 +322,18 @@ export class CombatView {
     const cardW = 150;
     const cardH = 195;
     const gap = 14;
-    const totalW = hand.length * cardW + Math.max(0, hand.length - 1) * gap;
-    let x = (DESIGN_W - totalW) / 2;
-    const y = 495;
+    // overlap-fan layout: cards squeeze together when the row would overflow
+    const availW = layout.W - 40;
+    const step =
+      hand.length <= 1
+        ? 0
+        : Math.min(cardW + gap, (availW - cardW) / (hand.length - 1));
+    const totalW = hand.length === 0 ? 0 : cardW + step * (hand.length - 1);
+    let x = (layout.W - totalW) / 2;
+    const y = layout.portrait ? 1040 : 495;
     for (const card of hand) {
       this.drawCard(card.instanceId, card.definitionId, x, y, cardW, cardH);
-      x += cardW + gap;
+      x += step;
     }
   }
 
@@ -367,16 +382,18 @@ export class CombatView {
 
   private drawEndTurnButton(): void {
     const enabled = this.engine.state.outcome === 'ongoing';
+    const x = layout.portrait ? layout.W - 200 : 1058;
+    const y = layout.portrait ? 515 : 452;
     this.root.addChild(
-      this.button('结束回合', 1058, 452, 182, 56, () => this.clickEndTurn(), enabled),
+      this.button('结束回合', x, y, 182, 56, () => this.clickEndTurn(), enabled),
     );
   }
 
   private drawLog(): void {
     if (this.messages.length === 0) return;
     const c = new Container();
-    c.x = 980;
-    c.y = 250;
+    c.x = layout.portrait ? 20 : 980;
+    c.y = layout.portrait ? 340 : 250;
     const shown = this.messages.slice(-5);
     shown.forEach((msg, i) => {
       const alpha = 0.4 + (0.6 * (i + 1)) / shown.length;
@@ -388,13 +405,14 @@ export class CombatView {
   private drawOutcome(): void {
     const win = this.engine.state.outcome === 'victory';
     const c = new Container();
-    c.addChild(new Graphics().rect(0, 0, DESIGN_W, DESIGN_H).fill({ color: COLOR.overlay, alpha: 0.82 }));
-    c.addChild(this.label(win ? '胜利！' : '失败…', 64, win ? COLOR.hpPlayer : COLOR.hpEnemy, 640, 280, 0.5));
+    const titleY = layout.portrait ? 448 : 280;
+    c.addChild(new Graphics().rect(0, 0, layout.W, layout.H).fill({ color: COLOR.overlay, alpha: 0.82 }));
+    c.addChild(this.label(win ? '胜利！' : '失败…', 64, win ? COLOR.hpPlayer : COLOR.hpEnemy, layout.W / 2, titleY, 0.5));
     if (win) {
-      c.addChild(this.label(`剩余生命 ${this.engine.state.player.hp}`, 22, COLOR.text, 640, 350, 0.5));
+      c.addChild(this.label(`剩余生命 ${this.engine.state.player.hp}`, 22, COLOR.text, layout.W / 2, titleY + 70, 0.5));
     }
     c.addChild(
-      this.button(win ? '继续' : '结束', 540, 400, 200, 60, () =>
+      this.button(win ? '继续' : '结束', layout.W / 2 - 100, titleY + 120, 200, 60, () =>
         this.onCombatEnd(win, this.engine.state.player.hp), true),
     );
     this.root.addChild(c);

@@ -2,7 +2,7 @@ import { Container, Graphics } from 'pixi.js';
 import type { RunManager } from '@/game/runManager';
 import type { MapNode, NodeType } from '@/types/run';
 import { RELICS } from '@/data/relics';
-import { DESIGN_W, DESIGN_H } from '@/render/combatView';
+import { layout } from '@/render/layout';
 import { label, button, UI } from '@/render/ui';
 
 // MapView: renders the layered-DAG map and lets the player pick the next
@@ -32,7 +32,7 @@ export class MapView {
     const map = state.map;
 
     // header
-    this.root.addChild(label('旅程地图', 30, UI.text, DESIGN_W / 2, 20, 0.5));
+    this.root.addChild(label('旅程地图', 30, UI.text, layout.W / 2, 20, 0.5));
     this.root.addChild(label(`生命 ${state.playerHp}/${state.playerMaxHp}`, 20, UI.good, 40, 28));
     this.root.addChild(label(`金币 ${state.gold}`, 20, UI.accent, 40, 56));
     this.root.addChild(label(`卡组 ${state.deck.length} 张`, 18, UI.subtle, 40, 84));
@@ -45,17 +45,17 @@ export class MapView {
     const visited = new Set(state.visitedNodeIds);
 
     // vertical layout: layer 0 at bottom, boss at top
-    const topPad = 120;
+    const topPad = layout.portrait ? 170 : 120;
     const bottomPad = 90;
-    const usableH = DESIGN_H - topPad - bottomPad;
+    const usableH = layout.H - topPad - bottomPad;
     const layerY = (layer: number): number =>
-      DESIGN_H - bottomPad - (layer / (map.layerCount - 1)) * usableH;
+      layout.H - bottomPad - (layer / (map.layerCount - 1)) * usableH;
     const nodeX = (node: MapNode): number => {
       const layerNodes = Object.values(map.nodes).filter((n) => n.layer === node.layer);
       const count = layerNodes.length;
-      const spacing = Math.min(220, (DESIGN_W - 200) / Math.max(1, count));
+      const spacing = Math.min(220, (layout.W - 200) / Math.max(1, count));
       const totalW = spacing * (count - 1);
-      const startX = DESIGN_W / 2 - totalW / 2;
+      const startX = layout.W / 2 - totalW / 2;
       return startX + node.col * spacing;
     };
 
@@ -81,7 +81,7 @@ export class MapView {
     // if the run is over, offer a restart
     if (this.mgr.isOver()) {
       this.root.addChild(
-        button(state.phase === 'won' ? '通关！新的一局' : '再来一局', DESIGN_W / 2 - 110, DESIGN_H - 74, () => this.onEnterNode('__restart__'), { width: 220, color: state.phase === 'won' ? UI.buttonAlt : UI.button }),
+        button(state.phase === 'won' ? '通关！新的一局' : '再来一局', layout.W / 2 - 110, layout.H - 74, () => this.onEnterNode('__restart__'), { width: 220, color: state.phase === 'won' ? UI.buttonAlt : UI.button }),
       );
     }
   }

@@ -2,6 +2,8 @@
 
 数据驱动的卡牌 Roguelike Deckbuilder，使用 **TypeScript + PixiJS + Vite** 构建。
 
+**🎮 在线试玩：https://flawlesschen.github.io/nova-spire/** （桌面横屏与手机竖屏均可）
+
 爬塔式的单局旅程：在分层地图上选路，逐场战斗，靠三选一加牌与遗物成长，最终挑战 Boss。进度自动存档，刷新即可续玩。
 
 ## ✨ 特性
@@ -10,6 +12,7 @@
 - **回合制卡牌战斗**：能量、抽/弃/洗牌堆、格挡、意图预告，以及虚弱/易伤/中毒/力量状态
 - **22 张卡牌 · 6 种敌人（含 2 精英 + Boss） · 6 个遗物**，全部为数据；新增内容 = 加数据
 - **遗物 = 事件总线订阅者**：战斗开始加护甲、每 3 张牌抽 1 张、击杀回血等，零引擎耦合
+- **移动端竖屏适配**：横屏 1280×720 / 竖屏 720×1280 双设计空间，旋转即时重排，触屏优化
 - **种子化可复现**：同种子生成同地图、同战斗；存档精确保存 RNG 状态
 - **自动存档 / 续玩**：localStorage，带版本校验与损坏防御
 - **飘字与音效占位**：伤害/格挡飘字 + WebAudio 合成音效，无资源依赖
@@ -59,10 +62,9 @@ npm run typecheck
 
 ## 📦 部署
 
-本仓库当前为**私有**，私有仓库的 GitHub Pages 需要付费计划。两种部署方式：
+推送到 `master` 会自动触发两个工作流：**CI**（测试 + 构建）与 **Deploy Pages**（构建并发布到 GitHub Pages）。线上地址：https://flawlesschen.github.io/nova-spire/
 
-- **转为公开后启用 Pages**：仓库设为 public，然后 `Settings → Pages → Source: GitHub Actions`（已内置 `.github/workflows/ci.yml` 会构建 `dist/`）。
-- **部署到任意静态托管**：`npm run build` 产出 `dist/`，上传到 Netlify / Vercel / Cloudflare Pages 等即可。`vite.config.ts` 已设 `base: './'`，支持子路径部署。
+也可部署到任意静态托管：`npm run build` 产出 `dist/`，上传到 Netlify / Vercel / Cloudflare Pages 等即可。`vite.config.ts` 已设 `base: './'`，支持子路径部署。
 
 ## 📄 许可
 

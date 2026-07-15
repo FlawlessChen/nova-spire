@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // Render-layer logic tests. PixiJS needs WebGL, which isn't available in the
 // test env, so we mock its display objects with chainable stubs. This does NOT
@@ -56,6 +56,7 @@ vi.mock('pixi.js', () => {
 
 import { CombatEngine, type CombatConfig } from '@/game/combatEngine';
 import { CombatView } from '@/render/combatView';
+import { updateLayout } from '@/render/layout';
 
 function makeEngine(overrides: Partial<CombatConfig> = {}): CombatEngine {
   const config: CombatConfig = {
@@ -160,5 +161,46 @@ describe('CombatView interaction', () => {
     expect(engine.state.hand.length).toBe(before - 1);
     // render() already ran inside clickCard without throwing
     expect((view.root as { children: unknown[] }).children.length).toBeGreaterThan(0);
+  });
+});
+
+describe('CombatView portrait mode', () => {
+  // layout is a module singleton — flip to portrait for these tests, then
+  // restore landscape so other suites are unaffected.
+  beforeEach(() => {
+    updateLayout(390, 844);
+  });
+  afterEach(() => {
+    updateLayout(1280, 720);
+  });
+
+  it('renders in portrait without throwing (incl. 3-enemy row and outcome overlay)', () => {
+    const engine = makeEngine({ enemies: ['sentry', 'sentry', 'sentry'] });
+    const view = new CombatView(engine, () => {});
+    expect(() => view.render()).not.toThrow();
+    expect((view.root as { children: unknown[] }).children.length).toBeGreaterThan(0);
+  });
+
+  it('interactions still drive the engine in portrait', () => {
+    const engine = makeEngine();
+    const view = new CombatView(engine, () => {});
+    view.render();
+    const enemy = engine.state.enemies[0];
+    const hpBefore = enemy.hp;
+    const strike = engine.state.hand.find((c) => c.definitionId === 'strike')!;
+    (view as unknown as ClickableView).clickCard(strike.instanceId);
+    expect(engine.state.enemies[0].hp).toBe(hpBefore - 6);
+    (view as unknown as ClickableView).clickEndTurn();
+    expect(engine.state.turn).toBe(2);
+  });
+
+  it('renders a large hand with overlap without throwing', () => {
+    const engine = makeEngine({
+      handSize: 9,
+      deck: Array(12).fill('defend'),
+      maxEnergy: 99,
+    });
+    const view = new CombatView(engine, () => {});
+    expect(() => view.render()).not.toThrow();
   });
 });

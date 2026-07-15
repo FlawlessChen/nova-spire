@@ -102,6 +102,11 @@ export class App {
     v?.render?.();
   }
 
+  /** Re-render the active view in place (e.g. after an orientation change). */
+  rerender(): void {
+    this.renderActive();
+  }
+
   // ── view builders ──
   private showMap(): void {
     const view = new MapView(this.mgr, (nodeId) => {

@@ -1,10 +1,11 @@
 import { Application, Container } from 'pixi.js';
 import { App } from '@/render/app';
-import { DESIGN_W, DESIGN_H } from '@/render/combatView';
+import { layout, updateLayout } from '@/render/layout';
 
 // App entry: boots PixiJS, mounts the top-level App (which owns the run FSM and
-// swaps between map / combat / reward / campfire views), and scales the fixed
-// 1280x720 design stage to fit the window.
+// swaps between map / combat / reward / campfire views), and scales the
+// orientation-aware design stage (landscape 1280x720, portrait 720x1280) to
+// fit the window. Rotating a phone re-renders the active view in place.
 
 async function main(): Promise<void> {
   const app = new Application();
@@ -24,19 +25,26 @@ async function main(): Promise<void> {
   const stage = new Container();
   app.stage.addChild(stage);
 
+  // Pick the initial orientation BEFORE the first render.
+  updateLayout(app.screen.width, app.screen.height);
+
   const game = new App();
   stage.addChild(game.root);
   game.start();
 
-  const layout = (): void => {
-    const scale = Math.min(app.screen.width / DESIGN_W, app.screen.height / DESIGN_H);
+  const fit = (): void => {
+    const scale = Math.min(app.screen.width / layout.W, app.screen.height / layout.H);
     stage.scale.set(scale);
-    stage.x = (app.screen.width - DESIGN_W * scale) / 2;
-    stage.y = (app.screen.height - DESIGN_H * scale) / 2;
+    stage.x = (app.screen.width - layout.W * scale) / 2;
+    stage.y = (app.screen.height - layout.H * scale) / 2;
   };
 
-  app.renderer.on('resize', layout);
-  layout();
+  app.renderer.on('resize', () => {
+    const orientationChanged = updateLayout(app.screen.width, app.screen.height);
+    if (orientationChanged) game.rerender();
+    fit();
+  });
+  fit();
 }
 
 main().catch((err) => {
