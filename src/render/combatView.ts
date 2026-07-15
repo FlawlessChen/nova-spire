@@ -7,6 +7,7 @@ import { ENEMIES } from '@/data/enemies';
 import { RELICS } from '@/data/relics';
 import { getStatusStacks } from '@/game/entities';
 import { WEAK_MULTIPLIER, VULNERABLE_MULTIPLIER } from '@/data/statuses';
+import { playSound } from '@/render/sound';
 
 // PixiJS render layer. Reads CombatState and draws it; never mutates game state.
 // All player input flows back through CombatEngine methods. On any engine call
@@ -50,6 +51,11 @@ export class CombatView {
   readonly root = new Container();
   private selectedInstanceId: string | null = null;
   private messages: string[] = [];
+  // FX: floating damage/block numbers live on a persistent layer that survives
+  // full re-renders (render() only clears root, then re-attaches this layer).
+  private fxLayer = new Container();
+  private floats: { node: Text; life: number }[] = [];
+  private outcomeSoundPlayed = false;
 
   constructor(
     private engine: CombatEngine,
@@ -57,6 +63,7 @@ export class CombatView {
     private relicIds: string[] = [],
   ) {
     this.engine.bus.subscribe((e) => this.onEvent(e));
+    this.startFxLoop();
   }
 
   // ── event log ──
@@ -65,15 +72,68 @@ export class CombatView {
       case 'onTurnStart':
         if (e.side === 'player') this.pushLog(`— 回合 ${e.turn} —`);
         break;
+      case 'onCardPlayed':
+        playSound('card');
+        break;
       case 'onDamageTaken':
         if (e.targetId === PLAYER_ID && e.amount > 0) {
           this.pushLog(`你受到 ${e.amount} 伤害${e.blocked > 0 ? `（挡下 ${e.blocked}）` : ''}`);
         }
+        this.spawnDamageFloat(e.targetId, e.amount, e.blocked);
+        playSound(e.amount > 0 ? 'hit' : 'block');
         break;
       case 'onEnemyDeath':
         this.pushLog('敌人被击败！');
         break;
     }
+  }
+
+  // ── floating combat text ──
+  // Rises and fades via a rAF loop; skipped silently where rAF doesn't exist
+  // (tests, SSR). Positions are approximated from the same layout math the
+  // draw methods use.
+  private startFxLoop(): void {
+    if (typeof requestAnimationFrame === 'undefined') return;
+    const tick = (): void => {
+      for (const f of this.floats) {
+        f.node.y -= 1.1;
+        f.life -= 1;
+        f.node.alpha = Math.max(0, Math.min(1, f.life / 45));
+      }
+      this.floats = this.floats.filter((f) => {
+        if (f.life <= 0) {
+          this.fxLayer.removeChild(f.node);
+          return false;
+        }
+        return true;
+      });
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }
+
+  private spawnDamageFloat(targetId: string, amount: number, blocked: number): void {
+    const pos = this.positionFor(targetId);
+    if (!pos) return;
+    const text = amount > 0 ? `-${amount}` : blocked > 0 ? `格挡 ${blocked}` : '';
+    if (!text) return;
+    const color = amount > 0 ? 0xff5a5a : 0x6bb8ff;
+    const node = this.label(text, amount >= 10 ? 30 : 24, color, pos.x, pos.y, 0.5);
+    this.fxLayer.addChild(node);
+    this.floats.push({ node, life: 75 });
+  }
+
+  // Approximate on-screen anchor of a combatant, mirroring drawPlayer/drawEnemies.
+  private positionFor(entityId: string): { x: number; y: number } | null {
+    if (entityId === PLAYER_ID) return { x: 165, y: 500 };
+    const enemies = this.engine.state.enemies;
+    const idx = enemies.findIndex((e) => e.entityId === entityId);
+    if (idx < 0) return null;
+    const panelW = 200;
+    const gap = 40;
+    const totalW = enemies.length * panelW + (enemies.length - 1) * gap;
+    const x = (DESIGN_W - totalW) / 2 + idx * (panelW + gap) + panelW / 2;
+    return { x, y: 150 };
   }
 
   private pushLog(msg: string): void {
@@ -132,7 +192,16 @@ export class CombatView {
     this.drawEndTurnButton();
     this.drawLog();
 
-    if (state.outcome !== 'ongoing') this.drawOutcome();
+    if (state.outcome !== 'ongoing') {
+      this.drawOutcome();
+      if (!this.outcomeSoundPlayed) {
+        this.outcomeSoundPlayed = true;
+        playSound(state.outcome === 'victory' ? 'victory' : 'defeat');
+      }
+    }
+
+    // FX layer goes on top and persists across re-renders
+    this.root.addChild(this.fxLayer);
   }
 
   private drawHeader(): void {
