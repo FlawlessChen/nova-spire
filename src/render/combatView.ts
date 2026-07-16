@@ -50,6 +50,7 @@ export class CombatView {
   private fxLayer = new Container();
   private floats: { node: Text; life: number }[] = [];
   private outcomeSoundPlayed = false;
+  private shakeFrames = 0;
 
   constructor(
     private engine: CombatEngine,
@@ -69,6 +70,7 @@ export class CombatView {
         break;
       case 'onCardPlayed':
         playSound('card');
+        this.shakeFrames = Math.max(this.shakeFrames, 4);
         break;
       case 'onDamageTaken':
         if (e.targetId === PLAYER_ID && e.amount > 0) {
@@ -76,6 +78,7 @@ export class CombatView {
         }
         this.spawnDamageFloat(e.targetId, e.amount, e.blocked);
         playSound(e.amount > 0 ? 'hit' : 'block');
+        if (e.amount > 0) this.shakeFrames = Math.max(this.shakeFrames, e.targetId === PLAYER_ID ? 8 : 5);
         break;
       case 'onEnemyDeath':
         this.pushLog(L.ui.logEnemyDead);
@@ -102,6 +105,15 @@ export class CombatView {
         }
         return true;
       });
+      if (this.shakeFrames > 0) {
+        const strength = this.shakeFrames > 5 ? 2.5 : 1.2;
+        this.root.x = (Math.random() - 0.5) * strength;
+        this.root.y = (Math.random() - 0.5) * strength;
+        this.shakeFrames -= 1;
+      } else {
+        this.root.x = 0;
+        this.root.y = 0;
+      }
       requestAnimationFrame(tick);
     };
     requestAnimationFrame(tick);
