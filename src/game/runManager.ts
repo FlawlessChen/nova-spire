@@ -1,11 +1,12 @@
-import type { RunState, MapNode, NodeType } from '@/types/run';
+import type { RunState, MapNode, NodeType, ShopInventory } from '@/types/run';
 import type { CombatConfig } from '@/game/combatEngine';
 import { SeededRNG } from '@/core/rng';
 import { generateMap, type MapGenConfig } from '@/game/mapGenerator';
 import { ENCOUNTERS } from '@/data/encounters';
-import { STARTING_DECK, REWARD_POOL } from '@/data/cards';
+import { STARTING_DECK, REWARD_POOL, CARDS } from '@/data/cards';
 import { RELIC_POOL } from '@/data/relics';
 import { PATHS, DEFAULT_PATH_ID } from '@/data/paths';
+import { canUpgrade, upgradedId } from '@/data/cardUpgrade';
 
 // RunManager: the journey FSM that sits above CombatEngine. It owns RunState
 // transitions — generate map, enter a node, hand out a combat config, apply the
@@ -22,6 +23,14 @@ const MAX_ENERGY = 3;
 const HAND_SIZE = 5;
 const CAMPFIRE_HEAL_FRACTION = 0.3;
 const REWARD_CHOICES = 3;
+
+// Shop economics. Priced so a couple of good fights afford a card and a strong
+// run can splurge on a relic. Removal is cheap enough to be a real option.
+const SHOP_CARD_COUNT = 4;
+const SHOP_RELIC_COUNT = 1;
+const SHOP_CARD_PRICE = { common: 30, uncommon: 48, rare: 72 } as const;
+const SHOP_RELIC_PRICE = 100;
+const SHOP_REMOVAL_PRICE = 50;
 
 // Re-export the reward pool (defined in the data layer) for convenience.
 export { REWARD_POOL };
@@ -59,6 +68,7 @@ export class RunManager {
       nodesCleared: 0,
       pendingReward: null,
       pendingRelic: null,
+      shop: null,
       combatSeed: null,
     };
     const mgr = new RunManager(state, rng);
@@ -107,6 +117,9 @@ export class RunManager {
 
     if (node.type === 'campfire') {
       this.state.phase = 'campfire';
+    } else if (node.type === 'shop') {
+      this.state.phase = 'shop';
+      this.state.shop = this.rollShop();
     } else {
       // battle / elite / boss → start combat
       this.state.phase = 'combat';
@@ -219,6 +232,95 @@ export class RunManager {
     if (this.state.phase !== 'campfire') return;
     const heal = Math.floor(this.state.playerMaxHp * CAMPFIRE_HEAL_FRACTION);
     this.state.playerHp = Math.min(this.state.playerMaxHp, this.state.playerHp + heal);
+    this.state.nodesCleared += 1;
+    this.state.phase = 'map';
+    this.sync();
+  }
+
+  /** Deck entries (with duplicates) that can still be upgraded. */
+  upgradeableCards(): string[] {
+    return this.state.deck.filter((entry) => canUpgrade(entry));
+  }
+
+  /**
+   * Upgrade one deck card at a campfire (alternative to resting). `deckIndex`
+   * points into state.deck. No-ops if the card can't be upgraded. Advances to
+   * the map like resting does.
+   */
+  upgradeCardAtCampfire(deckIndex: number): void {
+    if (this.state.phase !== 'campfire') return;
+    const entry = this.state.deck[deckIndex];
+    const up = entry ? upgradedId(entry) : null;
+    if (!up) return;
+    this.state.deck[deckIndex] = up;
+    this.state.nodesCleared += 1;
+    this.state.phase = 'map';
+    this.sync();
+  }
+
+  // ── shop ──
+  // Roll a seeded inventory: a few cards from the reward pool (deduped) priced
+  // by rarity, one relic the player doesn't own, plus a card-removal service.
+  private rollShop(): ShopInventory {
+    const cardPool = this.rng.shuffle(REWARD_POOL).slice(0, SHOP_CARD_COUNT);
+    const cards = cardPool.map((id) => ({
+      id,
+      price: SHOP_CARD_PRICE[CARDS[id]?.rarity ?? 'common'],
+      sold: false,
+    }));
+
+    const owned = new Set(this.state.relics);
+    const relicChoices = this.rng.shuffle(RELIC_POOL.filter((id) => !owned.has(id))).slice(0, SHOP_RELIC_COUNT);
+    const relics = relicChoices.map((id) => ({ id, price: SHOP_RELIC_PRICE, sold: false }));
+
+    return { cards, relics, removalPrice: SHOP_REMOVAL_PRICE, removalUsed: false };
+  }
+
+  /** Buy card at shop index. No-op if not enough gold / already sold. */
+  buyCard(index: number): boolean {
+    const shop = this.state.shop;
+    if (this.state.phase !== 'shop' || !shop) return false;
+    const item = shop.cards[index];
+    if (!item || item.sold || this.state.gold < item.price) return false;
+    this.state.gold -= item.price;
+    this.state.deck.push(item.id);
+    item.sold = true;
+    this.sync();
+    return true;
+  }
+
+  /** Buy relic at shop index. Grants the relic immediately. */
+  buyRelic(index: number): boolean {
+    const shop = this.state.shop;
+    if (this.state.phase !== 'shop' || !shop) return false;
+    const item = shop.relics[index];
+    if (!item || item.sold || this.state.gold < item.price) return false;
+    if (this.state.relics.includes(item.id)) return false;
+    this.state.gold -= item.price;
+    this.state.relics.push(item.id);
+    item.sold = true;
+    this.sync();
+    return true;
+  }
+
+  /** Pay to remove a deck card (one-time per shop). */
+  removeCard(deckIndex: number): boolean {
+    const shop = this.state.shop;
+    if (this.state.phase !== 'shop' || !shop) return false;
+    if (shop.removalUsed || this.state.gold < shop.removalPrice) return false;
+    if (deckIndex < 0 || deckIndex >= this.state.deck.length) return false;
+    if (this.state.deck.length <= 1) return false; // never empty the deck
+    this.state.gold -= shop.removalPrice;
+    this.state.deck.splice(deckIndex, 1);
+    shop.removalUsed = true;
+    this.sync();
+    return true;
+  }
+
+  /** Leave the shop and return to the map. */
+  leaveShop(): void {
+    if (this.state.phase !== 'shop') return;
+    this.state.shop = null;
     this.state.nodesCleared += 1;
     this.state.phase = 'map';
     this.sync();

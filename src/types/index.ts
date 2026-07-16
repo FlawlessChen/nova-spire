@@ -93,12 +93,19 @@ export interface CardDefinition {
   description: string;
   effects: EffectDefinition[];
   exhaust?: boolean;
+  // Upgrade override: fields present here replace the base when the card is
+  // upgraded (campfire/shop). effects/cost/description are fully replaced.
+  upgrade?: {
+    cost?: number;
+    description?: string;
+    effects?: EffectDefinition[];
+  };
 }
 
 export interface CardInstance {
   instanceId: string;
   definitionId: string;
-  upgraded?: boolean; // upgrade-system hook; not implemented in MVP
+  upgraded?: boolean; // set from a deck entry's "+" suffix; applied in cardDef()
 }
 
 // ─────────────────────────────────────────────────────────────

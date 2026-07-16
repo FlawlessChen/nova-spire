@@ -33,6 +33,7 @@ export interface Locale {
     nodeBattle: string;
     nodeElite: string;
     nodeCampfire: string;
+    nodeShop: string;
     nodeBoss: string;
     runWonNew: string;
     runLostNew: string;
@@ -48,6 +49,10 @@ export interface Locale {
     campfireHeal: (n: number) => string;
     campfireHp: (cur: number, healed: number, max: number) => string;
     rest: string;
+    campfireRest: string;
+    campfireUpgrade: string;
+    campfireUpgradeHint: string;
+    campfireNoUpgrade: string;
     // path select
     pathSelectTitle: string;
     pathSelectHint: string;
@@ -80,8 +85,20 @@ export interface Locale {
     drawPileTitle: (n: number) => string;
     discardPileTitle: (n: number) => string;
     emptyPile: string;
+    // shop
+    shopTitle: string;
+    shopCards: string;
+    shopRelics: string;
+    shopRemoval: string;
+    shopRemovalHint: string;
+    shopRemovalDone: string;
+    shopChooseRemoval: string;
+    shopSoldOut: string;
+    shopLeave: string;
+    shopGold: (n: number) => string;
+    price: (n: number) => string;
   };
-  cards: Record<string, { name: string; desc: string }>;
+  cards: Record<string, { name: string; desc: string; descUpgraded?: string }>;
   enemies: Record<string, string>;
   relics: Record<string, { name: string; desc: string }>;
   statuses: Record<string, { name: string; short: string }>;

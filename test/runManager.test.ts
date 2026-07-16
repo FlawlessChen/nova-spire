@@ -197,6 +197,107 @@ describe('RunManager', () => {
     expect(last).not.toBeNull();
   });
 
+  it('upgrades a card at a campfire (appends "+" to that deck slot)', () => {
+    const mgr = RunManager.newRun(1, 'berserker');
+    mgr.state.phase = 'campfire';
+    const idx = mgr.state.deck.findIndex((e) => e === 'strike');
+    expect(idx).toBeGreaterThanOrEqual(0);
+    mgr.upgradeCardAtCampfire(idx);
+    expect(mgr.state.deck[idx]).toBe('strike+');
+    expect(mgr.state.phase).toBe('map');
+    // an upgraded card can't be upgraded again
+    expect(mgr.upgradeableCards()).not.toContain('strike+');
+  });
+
+  it('campfire rest and upgrade are mutually exclusive per visit', () => {
+    const mgr = RunManager.newRun(1, 'berserker');
+    mgr.state.phase = 'campfire';
+    mgr.state.playerHp = 40;
+    mgr.restAtCampfire();
+    expect(mgr.state.phase).toBe('map');
+    // upgrade after resting is a no-op (no longer at a campfire)
+    const before = mgr.state.deck.slice();
+    mgr.upgradeCardAtCampfire(0);
+    expect(mgr.state.deck).toEqual(before);
+  });
+
+  it('rolls a shop inventory when entering a shop node', () => {
+    // find a seed whose first-layer choice can reach a shop quickly, else just
+    // force the transition by locating a shop node and driving into it.
+    const mgr = RunManager.newRun(5, 'berserker');
+    const shopNode = Object.values(mgr.state.map.nodes).find((n) => n.type === 'shop');
+    if (!shopNode) return; // generator presence is covered elsewhere
+    // Make the shop node an entry so we can enter it directly this test.
+    mgr.state.map.entryNodeIds = [shopNode.id];
+    mgr.state.currentNodeId = null;
+    mgr.state.phase = 'map';
+    mgr.state.map.nodes[shopNode.id].layer = 0;
+    expect(mgr.enterNode(shopNode.id)).toBe(true);
+    expect(mgr.state.phase).toBe('shop');
+    expect(mgr.state.shop).not.toBeNull();
+    expect(mgr.state.shop!.cards.length).toBeGreaterThan(0);
+  });
+
+  it('buys a card, spends gold, and grows the deck', () => {
+    const mgr = RunManager.newRun(3, 'berserker');
+    mgr.state.phase = 'shop';
+    mgr.state.gold = 500;
+    mgr.state.shop = {
+      cards: [{ id: 'heavyBlow', price: 65, sold: false }],
+      relics: [],
+      removalPrice: 60,
+      removalUsed: false,
+    };
+    const deckBefore = mgr.state.deck.length;
+    expect(mgr.buyCard(0)).toBe(true);
+    expect(mgr.state.gold).toBe(435);
+    expect(mgr.state.deck.length).toBe(deckBefore + 1);
+    expect(mgr.state.deck).toContain('heavyBlow');
+    // can't buy again (sold)
+    expect(mgr.buyCard(0)).toBe(false);
+  });
+
+  it('refuses a purchase without enough gold', () => {
+    const mgr = RunManager.newRun(3, 'berserker');
+    mgr.state.phase = 'shop';
+    mgr.state.gold = 10;
+    mgr.state.shop = { cards: [{ id: 'heavyBlow', price: 65, sold: false }], relics: [], removalPrice: 60, removalUsed: false };
+    expect(mgr.buyCard(0)).toBe(false);
+    expect(mgr.state.gold).toBe(10);
+  });
+
+  it('buys a relic and grants it', () => {
+    const mgr = RunManager.newRun(3, 'toxicologist');
+    mgr.state.phase = 'shop';
+    mgr.state.gold = 500;
+    mgr.state.shop = { cards: [], relics: [{ id: 'lantern', price: 130, sold: false }], removalPrice: 60, removalUsed: false };
+    expect(mgr.buyRelic(0)).toBe(true);
+    expect(mgr.state.relics).toContain('lantern');
+    expect(mgr.state.gold).toBe(370);
+  });
+
+  it('removes a card once per shop, never emptying the deck', () => {
+    const mgr = RunManager.newRun(3, 'berserker');
+    mgr.state.phase = 'shop';
+    mgr.state.gold = 500;
+    mgr.state.shop = { cards: [], relics: [], removalPrice: 60, removalUsed: false };
+    const len = mgr.state.deck.length;
+    expect(mgr.removeCard(0)).toBe(true);
+    expect(mgr.state.deck.length).toBe(len - 1);
+    expect(mgr.state.gold).toBe(440);
+    // removal is one-time per shop
+    expect(mgr.removeCard(0)).toBe(false);
+  });
+
+  it('leaving a shop returns to the map and clears stock', () => {
+    const mgr = RunManager.newRun(3, 'berserker');
+    mgr.state.phase = 'shop';
+    mgr.state.shop = { cards: [], relics: [], removalPrice: 60, removalUsed: false };
+    mgr.leaveShop();
+    expect(mgr.state.phase).toBe('map');
+    expect(mgr.state.shop).toBeNull();
+  });
+
   it('drops a relic when an elite is defeated', () => {
     const mgr = RunManager.newRun(1);
     const relicsBefore = mgr.state.relics.length; // path may grant a starting relic

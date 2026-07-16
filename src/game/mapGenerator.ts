@@ -27,10 +27,12 @@ export const DEFAULT_MAP_CONFIG: MapGenConfig = {
 // the boss is always a campfire row so the player can heal before the finale.
 function pickIntermediateType(rng: SeededRNG, layer: number, lastIntermediate: number): NodeType {
   if (layer === lastIntermediate) return 'campfire';
-  // ~15% campfire, ~20% elite (only from the 2nd intermediate layer on), else battle
+  // ~12% shop, ~13% campfire, ~20% elite (elites only from the 2nd
+  // intermediate layer on), else battle.
   const roll = rng.next();
-  if (roll < 0.15) return 'campfire';
-  if (layer >= 2 && roll < 0.35) return 'elite';
+  if (roll < 0.12) return 'shop';
+  if (roll < 0.25) return 'campfire';
+  if (layer >= 2 && roll < 0.45) return 'elite';
   return 'battle';
 }
 

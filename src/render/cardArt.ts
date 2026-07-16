@@ -1,6 +1,6 @@
 import { Container, Graphics, Text } from 'pixi.js';
 import type { CardDefinition } from '@/types';
-import { CARDS } from '@/data/cards';
+import { resolveCard, isUpgraded } from '@/data/cardUpgrade';
 import { cardName, cardDesc, cardTypeLabel } from '@/i18n';
 import { FONT, UI, label } from '@/render/ui';
 
@@ -46,15 +46,17 @@ export interface CardFaceOpts {
 }
 
 export function cardFace(definitionId: string, w: number, h: number, opts: CardFaceOpts = {}): Container {
-  const def = CARDS[definitionId];
+  const def = resolveCard(definitionId);
+  const upgraded = isUpgraded(definitionId);
   const c = new Container();
   const bandH = Math.round(h * 0.17);
 
-  // frame
+  // frame — upgraded cards get a green-gold border
+  const borderColor = opts.selected ? UI.gold : upgraded ? 0x8fe36a : RARITY_BORDER[def.rarity];
   const frame = new Graphics()
     .roundRect(0, 0, w, h, 12)
     .fill(0x10162a)
-    .stroke({ width: opts.selected ? 3 : 2, color: opts.selected ? UI.gold : RARITY_BORDER[def.rarity], alpha: opts.selected ? 1 : 0.9 });
+    .stroke({ width: opts.selected || upgraded ? 3 : 2, color: borderColor, alpha: opts.selected ? 1 : 0.9 });
   c.addChild(frame);
 
   // type band behind the name (flat rect under the rounded top)

@@ -10,7 +10,7 @@
 // strictly forward march with branching choices.
 // ─────────────────────────────────────────────────────────────
 
-export type NodeType = 'battle' | 'elite' | 'campfire' | 'boss';
+export type NodeType = 'battle' | 'elite' | 'campfire' | 'shop' | 'boss';
 
 export interface MapNode {
   id: string;            // stable id, convention `n{layer}-{col}` (boss: `n-boss`)
@@ -37,8 +37,24 @@ export type RunPhase =
   | 'combat'    // a battle is in progress
   | 'reward'    // picking a card reward after winning a battle
   | 'campfire'  // resting at a campfire
+  | 'shop'      // browsing a shop
   | 'won'       // the boss is dead — run cleared
   | 'lost';     // player died
+
+// A shop's rolled stock. Cards/relic are ids; each has a price. `removalUsed`
+// tracks the one-time card-removal service. Regenerated per shop visit.
+export interface ShopItem {
+  id: string;       // card entry or relic id
+  price: number;
+  sold: boolean;
+}
+
+export interface ShopInventory {
+  cards: ShopItem[];
+  relics: ShopItem[];
+  removalPrice: number;
+  removalUsed: boolean;
+}
 
 export interface RunState {
   seed: number;         // master seed the run was generated from
@@ -56,12 +72,13 @@ export interface RunState {
   nodesCleared: number;          // progress counter
   pendingReward: string[] | null;  // card choices offered after a battle
   pendingRelic: string | null;   // relic dropped by an elite/boss, awaiting pickup
+  shop: ShopInventory | null;    // rolled stock while phase === 'shop'
   combatSeed: number | null;     // seed for the in-progress combat (null outside combat)
 }
 
 // Save-file envelope: a version tag lets us migrate or reject stale saves.
-// v2 added `pathId` (M8 hero paths); v1 saves are rejected on load.
-export const SAVE_VERSION = 2;
+// v2 added `pathId` (M8); v3 added `shop` (M10). Older saves are rejected.
+export const SAVE_VERSION = 3;
 
 export interface SaveData {
   version: number;

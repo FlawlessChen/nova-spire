@@ -9,12 +9,14 @@ export const CARDS: Record<string, CardDefinition> = {
     type: 'attack', rarity: 'common', targetMode: 'enemy',
     description: 'Deal 6 damage.',
     effects: [{ kind: 'dealDamage', target: 'chosenEnemy', value: 6 }],
+    upgrade: { description: 'Deal 9 damage.', effects: [{ kind: 'dealDamage', target: 'chosenEnemy', value: 9 }] },
   },
   defend: {
     id: 'defend', name: 'Defend', cost: 1,
     type: 'skill', rarity: 'common', targetMode: 'self',
     description: 'Gain 5 Block.',
     effects: [{ kind: 'gainBlock', target: 'self', value: 5 }],
+    upgrade: { description: 'Gain 8 Block.', effects: [{ kind: 'gainBlock', target: 'self', value: 8 }] },
   },
   poisonStab: {
     id: 'poisonStab', name: 'Poison Stab', cost: 1,
@@ -24,6 +26,13 @@ export const CARDS: Record<string, CardDefinition> = {
       { kind: 'dealDamage', target: 'chosenEnemy', value: 4 },
       { kind: 'applyStatus', target: 'chosenEnemy', status: 'poison', amount: 3 },
     ],
+    upgrade: {
+      description: 'Deal 6 damage. Apply 5 Poison.',
+      effects: [
+        { kind: 'dealDamage', target: 'chosenEnemy', value: 6 },
+        { kind: 'applyStatus', target: 'chosenEnemy', status: 'poison', amount: 5 },
+      ],
+    },
   },
   bash: {
     id: 'bash', name: 'Bash', cost: 2,
@@ -33,12 +42,20 @@ export const CARDS: Record<string, CardDefinition> = {
       { kind: 'dealDamage', target: 'chosenEnemy', value: 8 },
       { kind: 'applyStatus', target: 'chosenEnemy', status: 'vulnerable', amount: 2 },
     ],
+    upgrade: {
+      description: 'Deal 12 damage. Apply 3 Vulnerable.',
+      effects: [
+        { kind: 'dealDamage', target: 'chosenEnemy', value: 12 },
+        { kind: 'applyStatus', target: 'chosenEnemy', status: 'vulnerable', amount: 3 },
+      ],
+    },
   },
   cleave: {
     id: 'cleave', name: 'Cleave', cost: 1,
     type: 'attack', rarity: 'common', targetMode: 'none',
     description: 'Deal 5 damage to ALL enemies.',
     effects: [{ kind: 'dealDamage', target: 'allEnemies', value: 5 }],
+    upgrade: { description: 'Deal 8 damage to ALL enemies.', effects: [{ kind: 'dealDamage', target: 'allEnemies', value: 8 }] },
   },
   ironWave: {
     id: 'ironWave', name: 'Iron Wave', cost: 1,
@@ -48,24 +65,34 @@ export const CARDS: Record<string, CardDefinition> = {
       { kind: 'dealDamage', target: 'chosenEnemy', value: 4 },
       { kind: 'gainBlock', target: 'self', value: 4 },
     ],
+    upgrade: {
+      description: 'Deal 7 damage. Gain 7 Block.',
+      effects: [
+        { kind: 'dealDamage', target: 'chosenEnemy', value: 7 },
+        { kind: 'gainBlock', target: 'self', value: 7 },
+      ],
+    },
   },
   flex: {
     id: 'flex', name: 'Flex', cost: 0,
     type: 'skill', rarity: 'common', targetMode: 'self',
     description: 'Gain 2 Strength.',
     effects: [{ kind: 'applyStatus', target: 'self', status: 'strength', amount: 2 }],
+    upgrade: { description: 'Gain 4 Strength.', effects: [{ kind: 'applyStatus', target: 'self', status: 'strength', amount: 4 }] },
   },
   quickDraw: {
     id: 'quickDraw', name: 'Quick Draw', cost: 1,
     type: 'skill', rarity: 'common', targetMode: 'self',
     description: 'Draw 2 cards.',
     effects: [{ kind: 'drawCards', value: 2 }],
+    upgrade: { cost: 0, description: 'Draw 2 cards.', effects: [{ kind: 'drawCards', value: 2 }] },
   },
   intimidate: {
     id: 'intimidate', name: 'Intimidate', cost: 0,
     type: 'skill', rarity: 'uncommon', targetMode: 'none',
     description: 'Apply 1 Weak to ALL enemies.',
     effects: [{ kind: 'applyStatus', target: 'allEnemies', status: 'weak', amount: 1 }],
+    upgrade: { description: 'Apply 2 Weak to ALL enemies.', effects: [{ kind: 'applyStatus', target: 'allEnemies', status: 'weak', amount: 2 }] },
   },
   secondWind: {
     id: 'secondWind', name: 'Second Wind', cost: 1,
@@ -75,12 +102,20 @@ export const CARDS: Record<string, CardDefinition> = {
       { kind: 'heal', target: 'self', value: 6 },
       { kind: 'gainEnergy', value: 1 },
     ],
+    upgrade: {
+      description: 'Heal 10. Gain 1 Energy.',
+      effects: [
+        { kind: 'heal', target: 'self', value: 10 },
+        { kind: 'gainEnergy', value: 1 },
+      ],
+    },
   },
   heavyBlow: {
     id: 'heavyBlow', name: 'Heavy Blow', cost: 2,
     type: 'attack', rarity: 'uncommon', targetMode: 'enemy',
     description: 'Deal 14 damage.',
     effects: [{ kind: 'dealDamage', target: 'chosenEnemy', value: 14 }],
+    upgrade: { description: 'Deal 20 damage.', effects: [{ kind: 'dealDamage', target: 'chosenEnemy', value: 20 }] },
   },
   shrugItOff: {
     id: 'shrugItOff', name: 'Shrug It Off', cost: 1,
@@ -90,6 +125,13 @@ export const CARDS: Record<string, CardDefinition> = {
       { kind: 'gainBlock', target: 'self', value: 8 },
       { kind: 'drawCards', value: 1 },
     ],
+    upgrade: {
+      description: 'Gain 12 Block. Draw 1 card.',
+      effects: [
+        { kind: 'gainBlock', target: 'self', value: 12 },
+        { kind: 'drawCards', value: 1 },
+      ],
+    },
   },
   // ── M4 additions: deeper mechanics, all reusing existing effect kinds ──
   twinStrike: {
@@ -100,6 +142,13 @@ export const CARDS: Record<string, CardDefinition> = {
       { kind: 'dealDamage', target: 'chosenEnemy', value: 5 },
       { kind: 'dealDamage', target: 'chosenEnemy', value: 5 },
     ],
+    upgrade: {
+      description: 'Deal 7 damage twice.',
+      effects: [
+        { kind: 'dealDamage', target: 'chosenEnemy', value: 7 },
+        { kind: 'dealDamage', target: 'chosenEnemy', value: 7 },
+      ],
+    },
   },
   rampage: {
     id: 'rampage', name: 'Rampage', cost: 2,
@@ -109,6 +158,13 @@ export const CARDS: Record<string, CardDefinition> = {
       { kind: 'dealDamage', target: 'chosenEnemy', value: 10 },
       { kind: 'applyStatus', target: 'self', status: 'strength', amount: 3 },
     ],
+    upgrade: {
+      description: 'Deal 14 damage. Gain 4 Strength.',
+      effects: [
+        { kind: 'dealDamage', target: 'chosenEnemy', value: 14 },
+        { kind: 'applyStatus', target: 'self', status: 'strength', amount: 4 },
+      ],
+    },
   },
   whirlwind: {
     id: 'whirlwind', name: 'Whirlwind', cost: 2,
@@ -118,6 +174,13 @@ export const CARDS: Record<string, CardDefinition> = {
       { kind: 'dealDamage', target: 'allEnemies', value: 8 },
       { kind: 'applyStatus', target: 'allEnemies', status: 'vulnerable', amount: 1 },
     ],
+    upgrade: {
+      description: 'Deal 11 damage to ALL enemies. Apply 2 Vulnerable to all.',
+      effects: [
+        { kind: 'dealDamage', target: 'allEnemies', value: 11 },
+        { kind: 'applyStatus', target: 'allEnemies', status: 'vulnerable', amount: 2 },
+      ],
+    },
   },
   toxicShiv: {
     id: 'toxicShiv', name: 'Toxic Shiv', cost: 0,
@@ -127,24 +190,34 @@ export const CARDS: Record<string, CardDefinition> = {
       { kind: 'dealDamage', target: 'chosenEnemy', value: 3 },
       { kind: 'applyStatus', target: 'chosenEnemy', status: 'poison', amount: 2 },
     ],
+    upgrade: {
+      description: 'Deal 4 damage. Apply 4 Poison.',
+      effects: [
+        { kind: 'dealDamage', target: 'chosenEnemy', value: 4 },
+        { kind: 'applyStatus', target: 'chosenEnemy', status: 'poison', amount: 4 },
+      ],
+    },
   },
   battleTrance: {
     id: 'battleTrance', name: 'Battle Trance', cost: 0,
     type: 'skill', rarity: 'uncommon', targetMode: 'self',
     description: 'Draw 3 cards.',
     effects: [{ kind: 'drawCards', value: 3 }],
+    upgrade: { description: 'Draw 4 cards.', effects: [{ kind: 'drawCards', value: 4 }] },
   },
   bloodletting: {
     id: 'bloodletting', name: 'Bloodletting', cost: 0,
     type: 'skill', rarity: 'uncommon', targetMode: 'self',
     description: 'Gain 2 Energy.',
     effects: [{ kind: 'gainEnergy', value: 2 }],
+    upgrade: { description: 'Gain 3 Energy.', effects: [{ kind: 'gainEnergy', value: 3 }] },
   },
   ironclad: {
     id: 'ironclad', name: 'Ironclad', cost: 2,
     type: 'skill', rarity: 'uncommon', targetMode: 'self',
     description: 'Gain 14 Block.',
     effects: [{ kind: 'gainBlock', target: 'self', value: 14 }],
+    upgrade: { description: 'Gain 20 Block.', effects: [{ kind: 'gainBlock', target: 'self', value: 20 }] },
   },
   perfectedStrike: {
     id: 'perfectedStrike', name: 'Perfected Strike', cost: 2,
@@ -154,6 +227,13 @@ export const CARDS: Record<string, CardDefinition> = {
       { kind: 'dealDamage', target: 'chosenEnemy', value: 12 },
       { kind: 'gainBlock', target: 'self', value: 6 },
     ],
+    upgrade: {
+      description: 'Deal 16 damage. Gain 9 Block.',
+      effects: [
+        { kind: 'dealDamage', target: 'chosenEnemy', value: 16 },
+        { kind: 'gainBlock', target: 'self', value: 9 },
+      ],
+    },
   },
   cripple: {
     id: 'cripple', name: 'Cripple', cost: 1,
@@ -163,6 +243,13 @@ export const CARDS: Record<string, CardDefinition> = {
       { kind: 'applyStatus', target: 'chosenEnemy', status: 'weak', amount: 2 },
       { kind: 'applyStatus', target: 'chosenEnemy', status: 'vulnerable', amount: 2 },
     ],
+    upgrade: {
+      description: 'Apply 3 Weak and 3 Vulnerable.',
+      effects: [
+        { kind: 'applyStatus', target: 'chosenEnemy', status: 'weak', amount: 3 },
+        { kind: 'applyStatus', target: 'chosenEnemy', status: 'vulnerable', amount: 3 },
+      ],
+    },
   },
   reaper: {
     id: 'reaper', name: 'Reaper', cost: 2,
@@ -172,6 +259,13 @@ export const CARDS: Record<string, CardDefinition> = {
       { kind: 'dealDamage', target: 'allEnemies', value: 8 },
       { kind: 'heal', target: 'self', value: 8 },
     ],
+    upgrade: {
+      description: 'Deal 11 damage to ALL enemies. Heal 11.',
+      effects: [
+        { kind: 'dealDamage', target: 'allEnemies', value: 11 },
+        { kind: 'heal', target: 'self', value: 11 },
+      ],
+    },
   },
 };
 

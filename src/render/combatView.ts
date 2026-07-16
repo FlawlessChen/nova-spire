@@ -2,7 +2,7 @@ import { Container, Graphics, Text } from 'pixi.js';
 import type { CombatEngine } from '@/game/combatEngine';
 import type { EnemyState, GameEvent, StatusInstance, StatusId } from '@/types';
 import { PLAYER_ID } from '@/types';
-import { CARDS } from '@/data/cards';
+import { resolveCard } from '@/data/cardUpgrade';
 import { getStatusStacks } from '@/game/entities';
 import { WEAK_MULTIPLIER, VULNERABLE_MULTIPLIER } from '@/data/statuses';
 import { playSound } from '@/render/sound';
@@ -146,7 +146,7 @@ export class CombatView {
     if (!card) return;
     if (!this.engine.canPlay(card)) return; // not enough energy; ignore
 
-    const def = CARDS[card.definitionId];
+    const def = resolveCard(card.definitionId);
     if (def.targetMode === 'enemy') {
       const alive = state.enemies.filter((e) => e.hp > 0);
       if (alive.length === 1) {

@@ -108,4 +108,24 @@ describe('CombatEngine', () => {
     const totalCards = e.state.drawPile.length + e.state.hand.length + e.state.discardPile.length;
     expect(totalCards).toBe(4);
   });
+
+  it('applies upgraded card overrides (deck entry with "+" suffix)', () => {
+    // upgraded Strike deals 9 instead of 6
+    const e = new CombatEngine(makeConfig({ deck: ['strike+', 'strike+', 'strike+', 'defend', 'defend'] }));
+    e.start();
+    const enemy = e.state.enemies[0];
+    const hpBefore = enemy.hp;
+    const strike = e.state.hand.find((c) => c.definitionId === 'strike+')!;
+    e.playCard(strike.instanceId, enemy.entityId);
+    expect(e.state.enemies[0].hp).toBe(hpBefore - 9);
+  });
+
+  it('applies an upgraded cost override (upgraded Quick Draw costs 0)', () => {
+    const e = new CombatEngine(makeConfig({ deck: ['quickDraw+', 'strike', 'strike', 'strike', 'strike'] }));
+    e.start();
+    const qd = e.state.hand.find((c) => c.definitionId === 'quickDraw+')!;
+    const energyBefore = e.state.player.energy;
+    e.playCard(qd.instanceId);
+    expect(e.state.player.energy).toBe(energyBefore); // cost reduced to 0
+  });
 });

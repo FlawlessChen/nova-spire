@@ -12,7 +12,7 @@ import type {
 import { PLAYER_ID } from '@/types';
 import { SeededRNG } from '@/core/rng';
 import { EventBus } from '@/core/eventBus';
-import { CARDS } from '@/data/cards';
+import { resolveCard } from '@/data/cardUpgrade';
 import { ENEMIES } from '@/data/enemies';
 import { resolveEffects } from './targeting';
 import { applyIntent, tickStatuses } from './effectResolver';
@@ -127,7 +127,8 @@ export class CombatEngine {
   }
 
   private cardDef(instance: CardInstance): CardDefinition {
-    return CARDS[instance.definitionId];
+    // Deck entries may carry a "+" upgrade suffix; resolveCard applies overrides.
+    return resolveCard(instance.definitionId);
   }
 
   // ── playing a card ──

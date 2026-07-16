@@ -49,6 +49,7 @@ export function encounterPoolFor(type: NodeType): EncounterDefinition[] {
     case 'boss':
       return [BOSS_ENCOUNTER];
     case 'campfire':
+    case 'shop':
       return [];
   }
 }

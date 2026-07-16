@@ -42,6 +42,9 @@ import { HelpView } from '@/render/helpView';
 import { PauseMenu } from '@/render/pauseMenu';
 import { DeckView } from '@/render/deckView';
 import { PathSelectView } from '@/render/pathSelectView';
+import { ShopView } from '@/render/shopView';
+import { CampfireView } from '@/render/campfireView';
+import { RunManager } from '@/game/runManager';
 import { updateLayout } from '@/render/layout';
 import { isMuted, toggleMute } from '@/render/sound';
 
@@ -90,6 +93,30 @@ describe('front-end views render', () => {
     it(`PathSelectView renders in ${tag}`, () => {
       updateLayout(dims[0], dims[1]);
       const v = new PathSelectView(() => {});
+      expect(() => v.render()).not.toThrow();
+    });
+
+    it(`ShopView renders shop and remove modes in ${tag}`, () => {
+      updateLayout(dims[0], dims[1]);
+      const mgr = RunManager.newRun(3, 'berserker');
+      mgr.state.phase = 'shop';
+      mgr.state.gold = 300;
+      mgr.state.shop = {
+        cards: [{ id: 'heavyBlow', price: 65, sold: false }, { id: 'cleave+', price: 40, sold: true }],
+        relics: [{ id: 'lantern', price: 130, sold: false }],
+        removalPrice: 60,
+        removalUsed: false,
+      };
+      const v = new ShopView(mgr, { onBuyCard: () => {}, onBuyRelic: () => {}, onRemoveCard: () => {}, onLeave: () => {} });
+      expect(() => v.render()).not.toThrow();
+      expect(childCount(v)).toBeGreaterThan(0);
+    });
+
+    it(`CampfireView renders choose and upgrade modes in ${tag}`, () => {
+      updateLayout(dims[0], dims[1]);
+      const mgr = RunManager.newRun(3, 'berserker');
+      mgr.state.phase = 'campfire';
+      const v = new CampfireView(mgr, () => {}, () => {});
       expect(() => v.render()).not.toThrow();
     });
   }

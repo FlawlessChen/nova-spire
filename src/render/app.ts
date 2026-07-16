@@ -7,6 +7,7 @@ import { CombatView } from '@/render/combatView';
 import { MapView } from '@/render/mapView';
 import { RewardView } from '@/render/rewardView';
 import { CampfireView } from '@/render/campfireView';
+import { ShopView } from '@/render/shopView';
 import { PathSelectView } from '@/render/pathSelectView';
 import { TitleView } from '@/render/titleView';
 import { HelpView } from '@/render/helpView';
@@ -122,6 +123,9 @@ export class App {
       case 'campfire':
         this.showCampfire();
         break;
+      case 'shop':
+        this.showShop();
+        break;
     }
   }
 
@@ -139,6 +143,8 @@ export class App {
         return `reward:${s.currentNodeId}`;
       case 'campfire':
         return `campfire:${s.currentNodeId}`;
+      case 'shop':
+        return `shop:${s.currentNodeId}`;
     }
   }
 
@@ -203,6 +209,20 @@ export class App {
     const view = new CampfireView(mgr, () => {
       mgr.restAtCampfire();
       this.syncView();
+    }, (deckIndex) => {
+      mgr.upgradeCardAtCampfire(deckIndex);
+      this.syncView();
+    });
+    this.setScreen(view);
+  }
+
+  private showShop(): void {
+    const mgr = this.mgr!;
+    const view = new ShopView(mgr, {
+      onBuyCard: (i) => { mgr.buyCard(i); this.renderActive(); },
+      onBuyRelic: (i) => { mgr.buyRelic(i); this.renderActive(); },
+      onRemoveCard: (deckIndex) => { mgr.removeCard(deckIndex); this.renderActive(); },
+      onLeave: () => { mgr.leaveShop(); this.syncView(); },
     });
     this.setScreen(view);
   }
