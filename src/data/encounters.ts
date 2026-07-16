@@ -28,6 +28,8 @@ export const ELITE_ENCOUNTERS: EncounterDefinition[] = [
   { id: 'nob-and-cultist', enemies: ['gremlinNob', 'cultist'] },
   { id: 'jawworm-duo', enemies: ['jawWorm', 'jawWorm'] },
   { id: 'sentry-trio', enemies: ['sentry', 'sentry', 'sentry'] },
+  { id: 'drone-and-nob', enemies: ['spireDrone', 'gremlinNob'] },
+  { id: 'leech-and-sentry', enemies: ['voidLeech', 'sentry'] },
 ];
 
 // The boss — fixed for MVP.
