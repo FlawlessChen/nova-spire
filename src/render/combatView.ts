@@ -50,6 +50,7 @@ export class CombatView {
   private fxLayer = new Container();
   private floats: { node: Text; life: number }[] = [];
   private flashes: { node: Graphics; life: number }[] = [];
+  private cardTrails: { node: Graphics; life: number; startX: number; startY: number }[] = [];
   private outcomeSoundPlayed = false;
   private shakeFrames = 0;
 
@@ -72,6 +73,7 @@ export class CombatView {
       case 'onCardPlayed':
         playSound('card');
         this.shakeFrames = Math.max(this.shakeFrames, 4);
+        this.spawnCardTrail();
         break;
       case 'onDamageTaken':
         if (e.targetId === PLAYER_ID && e.amount > 0) {
@@ -116,6 +118,19 @@ export class CombatView {
         }
         return true;
       });
+      this.cardTrails = this.cardTrails.filter((trail) => {
+        trail.life -= 1;
+        const progress = 1 - trail.life / 16;
+        trail.node.x = trail.startX + (layout.W / 2 - trail.startX) * progress;
+        trail.node.y = trail.startY + ((layout.portrait ? 470 : 500) - trail.startY) * progress;
+        trail.node.alpha = Math.max(0, 1 - progress);
+        trail.node.scale.set(1 - progress * 0.35);
+        if (trail.life <= 0) {
+          this.fxLayer.removeChild(trail.node);
+          return false;
+        }
+        return true;
+      });
       if (this.shakeFrames > 0) {
         const strength = this.shakeFrames > 5 ? 2.5 : 1.2;
         this.root.x = (Math.random() - 0.5) * strength;
@@ -148,6 +163,19 @@ export class CombatView {
     flash.blendMode = 'add';
     this.fxLayer.addChild(flash);
     this.flashes.push({ node: flash, life: 12 });
+  }
+
+  private spawnCardTrail(): void {
+    const node = new Graphics()
+      .roundRect(-24, -32, 48, 64, 6)
+      .fill({ color: 0x70d8ff, alpha: 0.55 })
+      .stroke({ width: 2, color: 0xffffff, alpha: 0.8 });
+    const startX = layout.W / 2;
+    const startY = layout.portrait ? 1040 : 590;
+    node.x = startX;
+    node.y = startY;
+    this.fxLayer.addChild(node);
+    this.cardTrails.push({ node, life: 16, startX, startY });
   }
 
   // Approximate on-screen anchor of a combatant, mirroring drawPlayer/drawEnemies.
