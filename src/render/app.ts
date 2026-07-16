@@ -34,6 +34,7 @@ export class App {
   private currentPhaseKey = '';
   private activeView: { root: Container } | null = null;
   private activeOverlay: Overlay | null = null;
+  private transitionId = 0;
 
   constructor(save: SaveManager = new SaveManager()) {
     this.save = save;
@@ -272,5 +273,24 @@ export class App {
     this.screenLayer.removeChildren();
     this.screenLayer.addChild(view.root);
     view.render();
+    this.fadeInScreen();
+  }
+
+  /** A small presentation-only fade keeps phase changes from feeling abrupt. */
+  private fadeInScreen(): void {
+    const id = ++this.transitionId;
+    if (typeof requestAnimationFrame === 'undefined') {
+      this.screenLayer.alpha = 1;
+      return;
+    }
+    this.screenLayer.alpha = 0;
+    let frame = 0;
+    const tick = (): void => {
+      if (id !== this.transitionId) return;
+      frame += 1;
+      this.screenLayer.alpha = Math.min(1, frame / 10);
+      if (frame < 10) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
   }
 }
