@@ -67,6 +67,41 @@ describe('RunManager', () => {
     expect(mgr.state.deck.length).toBe(10); // starting deck
   });
 
+  it('applies the chosen hero path: starting deck + signature relic', () => {
+    const tox = RunManager.newRun(1, 'toxicologist');
+    expect(tox.state.pathId).toBe('toxicologist');
+    expect(tox.state.deck.length).toBe(10);
+    expect(tox.state.deck).toContain('poisonStab');
+    expect(tox.state.relics).toContain('catalyst');
+
+    const bul = RunManager.newRun(1, 'bulwark');
+    expect(bul.state.relics).toContain('bronzeScales');
+    expect(bul.state.deck).toContain('ironclad');
+  });
+
+  it('falls back to the default path for an unknown path id', () => {
+    const mgr = RunManager.newRun(1, 'nonsense');
+    expect(mgr.state.pathId).toBe('berserker'); // DEFAULT_PATH_ID
+    expect(mgr.state.deck.length).toBe(10);
+  });
+
+  it('biases rewards toward the chosen path (statistical)', () => {
+    // Toxicologist weights poisonStab/toxicShiv heavily; over many rolls they
+    // should appear far more often than the ~10% baseline of an off-path card.
+    let toxinHits = 0;
+    let samples = 0;
+    for (let seed = 1; seed <= 60; seed++) {
+      const mgr = RunManager.newRun(seed, 'toxicologist');
+      const node = mgr.availableNodes().find((n) => n.type === 'battle') ?? mgr.availableNodes()[0];
+      mgr.enterNode(node.id);
+      mgr.resolveCombat(true, 60);
+      const reward = mgr.state.pendingReward ?? [];
+      samples += reward.length;
+      toxinHits += reward.filter((id) => id === 'poisonStab' || id === 'toxicShiv').length;
+    }
+    expect(toxinHits / samples).toBeGreaterThan(0.2);
+  });
+
   it('only lets you enter reachable nodes', () => {
     const mgr = RunManager.newRun(1);
     // a boss node is never reachable from the start
@@ -164,13 +199,14 @@ describe('RunManager', () => {
 
   it('drops a relic when an elite is defeated', () => {
     const mgr = RunManager.newRun(1);
+    const relicsBefore = mgr.state.relics.length; // path may grant a starting relic
     // force an elite context: enter any battle node, then pretend it's an elite
     const node = mgr.availableNodes()[0];
     mgr.enterNode(node.id);
     mgr.state.map.nodes[node.id].type = 'elite';
     mgr.resolveCombat(true, 50);
-    expect(mgr.state.relics.length).toBe(1);
-    expect(mgr.state.pendingRelic).toBe(mgr.state.relics[0]);
+    expect(mgr.state.relics.length).toBe(relicsBefore + 1);
+    expect(mgr.state.pendingRelic).toBe(mgr.state.relics[mgr.state.relics.length - 1]);
   });
 
   it('never drops a duplicate relic', () => {

@@ -44,6 +44,7 @@ export interface RunState {
   seed: number;         // master seed the run was generated from
   rngState: number;     // live SeededRNG state, persisted so saves resume exactly
   phase: RunPhase;
+  pathId: string;       // chosen hero path (build identity) — see src/data/paths
   map: GameMap;
   currentNodeId: string | null;  // node currently occupied; null before first step
   visitedNodeIds: string[];      // path taken so far (for map rendering)
@@ -59,7 +60,8 @@ export interface RunState {
 }
 
 // Save-file envelope: a version tag lets us migrate or reject stale saves.
-export const SAVE_VERSION = 1;
+// v2 added `pathId` (M8 hero paths); v1 saves are rejected on load.
+export const SAVE_VERSION = 2;
 
 export interface SaveData {
   version: number;

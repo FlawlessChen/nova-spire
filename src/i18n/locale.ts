@@ -48,9 +48,16 @@ export interface Locale {
     campfireHeal: (n: number) => string;
     campfireHp: (cur: number, healed: number, max: number) => string;
     rest: string;
+    // path select
+    pathSelectTitle: string;
+    pathSelectHint: string;
+    pathStartDeck: string;
+    pathStartRelic: string;
+    startRun: string;
   };
   cards: Record<string, { name: string; desc: string }>;
   enemies: Record<string, string>;
   relics: Record<string, { name: string; desc: string }>;
   statuses: Record<string, { name: string; short: string }>;
+  paths: Record<string, { name: string; tagline: string; desc: string }>;
 }

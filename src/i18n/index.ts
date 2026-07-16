@@ -45,3 +45,15 @@ export function cardTypeLabel(type: 'attack' | 'skill' | 'power'): string {
       return L.ui.cardTypePower;
   }
 }
+
+export function pathName(id: string): string {
+  return L.paths[id]?.name ?? id;
+}
+
+export function pathTagline(id: string): string {
+  return L.paths[id]?.tagline ?? '';
+}
+
+export function pathDesc(id: string): string {
+  return L.paths[id]?.desc ?? '';
+}

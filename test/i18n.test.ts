@@ -5,6 +5,7 @@ import { CARDS } from '@/data/cards';
 import { ENEMIES } from '@/data/enemies';
 import { RELICS } from '@/data/relics';
 import { STATUSES } from '@/data/statuses';
+import { PATHS } from '@/data/paths';
 
 // Localization completeness guard: every content id in the data tables MUST
 // have a zh-CN entry. Adding a card/enemy/relic/status without a translation
@@ -38,6 +39,15 @@ describe('zh-CN locale completeness', () => {
     for (const id of Object.keys(STATUSES)) {
       expect(zhCN.statuses[id], `status ${id} missing zh-CN entry`).toBeDefined();
       expect(zhCN.statuses[id].short.length).toBeGreaterThan(0);
+    }
+  });
+
+  it('covers every hero path with name, tagline and description', () => {
+    for (const id of Object.keys(PATHS)) {
+      expect(zhCN.paths[id], `path ${id} missing zh-CN entry`).toBeDefined();
+      expect(zhCN.paths[id].name.length).toBeGreaterThan(0);
+      expect(zhCN.paths[id].tagline.length).toBeGreaterThan(0);
+      expect(zhCN.paths[id].desc.length).toBeGreaterThan(0);
     }
   });
 });

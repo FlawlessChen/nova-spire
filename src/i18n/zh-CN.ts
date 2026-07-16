@@ -48,6 +48,12 @@ export const zhCN: Locale = {
     campfireHeal: (n) => `休息可恢复 ${n} 点生命`,
     campfireHp: (cur, healed, max) => `${cur} → ${healed} / ${max}`,
     rest: '休息',
+    // 流派选择
+    pathSelectTitle: '选择你的流派',
+    pathSelectHint: '你的起始卡组、专属遗物与奖励倾向将由此决定',
+    pathStartDeck: '起始卡组',
+    pathStartRelic: '专属遗物',
+    startRun: '开始征程',
   },
 
   cards: {
@@ -91,6 +97,7 @@ export const zhCN: Locale = {
     inkPhial: { name: '墨水瓶', desc: '每打出 3 张牌，抽 1 张牌。' },
     lantern: { name: '战地提灯', desc: '每回合开始时获得 2 点护甲。' },
     bloodVial: { name: '血瓶', desc: '每击败一个敌人，回复 3 点生命。' },
+    catalyst: { name: '催化剂', desc: '每回合开始时，对所有敌人施加 1 层中毒。' },
   },
 
   statuses: {
@@ -98,5 +105,23 @@ export const zhCN: Locale = {
     vulnerable: { name: '易伤', short: '易' },
     poison: { name: '中毒', short: '毒' },
     strength: { name: '力量', short: '力' },
+  },
+
+  paths: {
+    toxicologist: {
+      name: '淬毒者',
+      tagline: '剧毒流 · 以毒穿甲',
+      desc: '起手携带毒刃与淬毒小刀，专属遗物「催化剂」每回合为全体敌人叠毒。奖励偏向毒系与控制。',
+    },
+    berserker: {
+      name: '狂战士',
+      tagline: '力量流 · 越战越强',
+      desc: '起手携带蓄力与狂暴，专属遗物「金刚杵」开局即得力量。奖励偏向力量与多段攻击。',
+    },
+    bulwark: {
+      name: '壁垒卫士',
+      tagline: '护甲流 · 攻守一体',
+      desc: '起手携带铁潮与铁壁，专属遗物「青铜鳞甲」每场开局获得护甲。奖励偏向护甲与攻防转化。',
+    },
   },
 };

@@ -76,11 +76,21 @@ class FakeStorage implements StorageBackend {
 
 // Reach into the App's private RunManager to drive the run without a real UI.
 type AppInternals = {
-  mgr: import('@/game/runManager').RunManager;
+  mgr: import('@/game/runManager').RunManager | null;
   syncView(): void;
   start(): void;
+  newRun(pathId: string): void;
   root: { children: unknown[] };
 };
+
+// Start an app and, if it landed on path-select (no resumable save), pick a
+// path so `mgr` exists. Returns the app cast to its internals.
+function begin(save: SaveManager): AppInternals {
+  const app = new App(save) as unknown as AppInternals;
+  app.start();
+  if (!app.mgr) app.newRun('berserker');
+  return app;
+}
 
 describe('App FSM', () => {
   let save: SaveManager;
@@ -91,74 +101,77 @@ describe('App FSM', () => {
     save = new SaveManager(backend);
   });
 
-  it('starts a fresh run on the map', () => {
+  it('shows path select first, then starts a run on the map', () => {
     const app = new App(save) as unknown as AppInternals;
     app.start();
-    expect(app.mgr.state.phase).toBe('map');
+    // no run yet — the path-select gate is showing
+    expect(app.mgr).toBeNull();
     expect(app.root.children.length).toBeGreaterThan(0);
+    // choosing a path begins the run on the map
+    app.newRun('berserker');
+    expect(app.mgr!.state.phase).toBe('map');
+    expect(app.mgr!.state.pathId).toBe('berserker');
   });
 
   it('swaps to a combat view when entering a battle node', () => {
-    const app = new App(save) as unknown as AppInternals;
-    app.start();
-    const battle = app.mgr.availableNodes().find((n) => n.type !== 'campfire')!;
-    app.mgr.enterNode(battle.id);
+    const app = begin(save);
+    const battle = app.mgr!.availableNodes().find((n) => n.type !== 'campfire')!;
+    app.mgr!.enterNode(battle.id);
     app.syncView();
-    expect(app.mgr.state.phase).toBe('combat');
+    expect(app.mgr!.state.phase).toBe('combat');
     // a CombatView was mounted
     expect(app.root.children.length).toBeGreaterThan(0);
   });
 
   it('drives combat → reward → map and grows the deck', () => {
-    const app = new App(save) as unknown as AppInternals;
-    app.start();
-    const battle = app.mgr.availableNodes().find((n) => n.type === 'battle')!;
-    app.mgr.enterNode(battle.id);
+    const app = begin(save);
+    const battle = app.mgr!.availableNodes().find((n) => n.type === 'battle')!;
+    app.mgr!.enterNode(battle.id);
     app.syncView();
 
     // simulate winning the combat via the run manager directly
-    const deckBefore = app.mgr.state.deck.length;
-    app.mgr.resolveCombat(true, 50);
+    const deckBefore = app.mgr!.state.deck.length;
+    app.mgr!.resolveCombat(true, 50);
     app.syncView();
-    expect(app.mgr.state.phase).toBe('reward');
+    expect(app.mgr!.state.phase).toBe('reward');
 
     // pick the first reward
-    app.mgr.chooseReward(app.mgr.state.pendingReward![0]);
+    app.mgr!.chooseReward(app.mgr!.state.pendingReward![0]);
     app.syncView();
-    expect(app.mgr.state.phase).toBe('map');
-    expect(app.mgr.state.deck.length).toBe(deckBefore + 1);
+    expect(app.mgr!.state.phase).toBe('map');
+    expect(app.mgr!.state.deck.length).toBe(deckBefore + 1);
   });
 
   it('persists progress and resumes a saved run on restart', () => {
-    const app1 = new App(save) as unknown as AppInternals;
-    app1.start();
-    const battle = app1.mgr.availableNodes().find((n) => n.type === 'battle')!;
-    app1.mgr.enterNode(battle.id);
-    app1.mgr.resolveCombat(true, 44);
-    app1.mgr.chooseReward(null);
-    const deckLen = app1.mgr.state.deck.length;
-    const visited = app1.mgr.state.visitedNodeIds.slice();
+    const app1 = begin(save);
+    const battle = app1.mgr!.availableNodes().find((n) => n.type === 'battle')!;
+    app1.mgr!.enterNode(battle.id);
+    app1.mgr!.resolveCombat(true, 44);
+    app1.mgr!.chooseReward(null);
+    const deckLen = app1.mgr!.state.deck.length;
+    const visited = app1.mgr!.state.visitedNodeIds.slice();
+    const pathId = app1.mgr!.state.pathId;
 
     // a new App with the SAME backend should resume, not start fresh
     const app2 = new App(new SaveManager(backend)) as unknown as AppInternals;
     app2.start();
-    expect(app2.mgr.state.visitedNodeIds).toEqual(visited);
-    expect(app2.mgr.state.deck.length).toBe(deckLen);
-    expect(app2.mgr.state.playerHp).toBe(44);
+    expect(app2.mgr).not.toBeNull();
+    expect(app2.mgr!.state.visitedNodeIds).toEqual(visited);
+    expect(app2.mgr!.state.deck.length).toBe(deckLen);
+    expect(app2.mgr!.state.playerHp).toBe(44);
+    expect(app2.mgr!.state.pathId).toBe(pathId);
   });
 
   it('does not resume a finished run', () => {
-    const app1 = new App(save) as unknown as AppInternals;
-    app1.start();
-    const node = app1.mgr.availableNodes()[0];
-    app1.mgr.enterNode(node.id);
-    app1.mgr.resolveCombat(false, 0); // lose
-    expect(app1.mgr.state.phase).toBe('lost');
+    const app1 = begin(save);
+    const node = app1.mgr!.availableNodes()[0];
+    app1.mgr!.enterNode(node.id);
+    app1.mgr!.resolveCombat(false, 0); // lose
+    expect(app1.mgr!.state.phase).toBe('lost');
 
-    // new App should start fresh (a lost run isn't resumed)
+    // new App should show path-select again (a lost run isn't resumed)
     const app2 = new App(new SaveManager(backend)) as unknown as AppInternals;
     app2.start();
-    expect(app2.mgr.state.phase).toBe('map');
-    expect(app2.mgr.state.visitedNodeIds.length).toBe(0);
+    expect(app2.mgr).toBeNull();
   });
 });

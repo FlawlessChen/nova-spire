@@ -53,7 +53,21 @@ export const RELICS: Record<string, RelicDefinition> = {
     trigger: 'onEnemyDeath',
     effects: [{ kind: 'heal', target: 'self', value: 3 }],
   },
+  // ── Path signature relics (granted by a hero path at run start) ──
+  // Toxin path: seep poison onto all foes every turn.
+  catalyst: {
+    id: 'catalyst', name: 'Catalyst',
+    description: 'At the start of each turn, apply 1 Poison to ALL enemies.',
+    trigger: 'onTurnStart',
+    effects: [{ kind: 'applyStatus', target: 'allEnemies', status: 'poison', amount: 1 }],
+  },
 };
 
-// Relics that can drop as rewards (all of them, for MVP).
-export const RELIC_POOL: string[] = Object.keys(RELICS);
+// Signature relics are granted by hero paths at run start; they stay OUT of the
+// generic elite-drop pool so they remain path-defining.
+export const SIGNATURE_RELICS: string[] = ['catalyst'];
+
+// Relics that can drop as elite rewards (everything except signature relics).
+export const RELIC_POOL: string[] = Object.keys(RELICS).filter(
+  (id) => !SIGNATURE_RELICS.includes(id),
+);

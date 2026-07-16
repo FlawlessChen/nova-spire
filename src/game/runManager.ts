@@ -5,6 +5,7 @@ import { generateMap, type MapGenConfig } from '@/game/mapGenerator';
 import { ENCOUNTERS } from '@/data/encounters';
 import { STARTING_DECK, REWARD_POOL } from '@/data/cards';
 import { RELIC_POOL } from '@/data/relics';
+import { PATHS, DEFAULT_PATH_ID } from '@/data/paths';
 
 // RunManager: the journey FSM that sits above CombatEngine. It owns RunState
 // transitions — generate map, enter a node, hand out a combat config, apply the
@@ -38,20 +39,22 @@ export class RunManager {
   }
 
   // ── construction ──
-  static newRun(seed: number, mapConfig?: MapGenConfig): RunManager {
+  static newRun(seed: number, pathId: string = DEFAULT_PATH_ID, mapConfig?: MapGenConfig): RunManager {
     const rng = new SeededRNG(seed);
     const map = generateMap(rng, mapConfig);
+    const path = PATHS[pathId];
     const state: RunState = {
       seed,
       rngState: rng.getState(),
       phase: 'map',
+      pathId: path ? pathId : DEFAULT_PATH_ID,
       map,
       currentNodeId: null,
       visitedNodeIds: [],
       playerHp: PLAYER_MAX_HP,
       playerMaxHp: PLAYER_MAX_HP,
-      deck: STARTING_DECK.slice(),
-      relics: [],
+      deck: (path?.deck ?? STARTING_DECK).slice(),
+      relics: (path?.relics ?? []).slice(),
       gold: 0,
       nodesCleared: 0,
       pendingReward: null,
@@ -175,9 +178,20 @@ export class RunManager {
   }
 
   // ── rewards ──
+  // Weighted sampling without replacement: cards favored by the current path
+  // appear more often, but off-path cards (weight 1) can still show up.
   private rollReward(): string[] {
-    const pool = this.rng.shuffle(REWARD_POOL);
-    return pool.slice(0, Math.min(REWARD_CHOICES, pool.length));
+    const weights = PATHS[this.state.pathId]?.rewardWeights ?? {};
+    const remaining = REWARD_POOL.map((id) => ({ id, weight: weights[id] ?? 1 }));
+    const picks: string[] = [];
+    const n = Math.min(REWARD_CHOICES, remaining.length);
+    for (let i = 0; i < n; i++) {
+      const chosen = this.rng.weightedPick(remaining.map((r) => ({ value: r.id, weight: r.weight })));
+      picks.push(chosen);
+      const idx = remaining.findIndex((r) => r.id === chosen);
+      if (idx >= 0) remaining.splice(idx, 1); // no duplicates within one reward
+    }
+    return picks;
   }
 
   // Pick a relic the player doesn't already own, or null if they own them all.
