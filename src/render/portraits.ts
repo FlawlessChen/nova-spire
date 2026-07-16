@@ -47,6 +47,26 @@ const PORTRAITS: Record<string, Draw> = {
     g.circle(-r * 0.45, -r * 0.35, r * 0.08).fill(0x201008);
   },
 
+  // 虚空水蛭 — 紫色环体与吸能核心
+  voidLeech: (g, s) => {
+    const r = s / 2;
+    g.circle(0, 0, r * 0.82).stroke({ width: Math.max(4, s * 0.14), color: 0x8b5cf6, alpha: 0.9 });
+    g.circle(0, 0, r * 0.48).fill({ color: 0x160d2c, alpha: 0.95 });
+    g.circle(0, 0, r * 0.2).fill(0xff5ac8);
+    g.circle(-r * 0.5, -r * 0.45, r * 0.1).fill(0xd9c7ff);
+  },
+
+  // 尖塔无人机 — 青色悬浮机体与三角翼
+  spireDrone: (g, s) => {
+    const r = s / 2;
+    g.poly([0, -r, r * 0.9, r * 0.5, 0, r * 0.25, -r * 0.9, r * 0.5])
+      .fill({ color: 0x245b7a, alpha: 0.95 })
+      .stroke({ width: Math.max(2, s * 0.04), color: 0x4dd8ff, alpha: 0.85 });
+    g.circle(0, -r * 0.05, r * 0.27).fill(0x4dd8ff);
+    g.circle(0, -r * 0.05, r * 0.11).fill(0xeafcff);
+    g.rect(-r * 0.7, r * 0.58, r * 1.4, r * 0.1).fill({ color: 0x4dd8ff, alpha: 0.5 });
+  },
+
   // 地精首领 — 赤红巨颅 + 金色双角
   gremlinNob: (g, s) => {
     const r = s / 2;
@@ -80,6 +100,16 @@ const PORTRAITS: Record<string, Draw> = {
     g.circle(0, 0, r * 0.34).fill({ color: 0xffd54d, alpha: 0.25 });
     g.circle(0, 0, r * 0.22).fill(0xffd54d);
     g.circle(0, 0, r * 0.1).fill(0xfff6d8);
+  },
+
+  // 星界泰坦 — 星环包围的深空巨核
+  astralTitan: (g, s) => {
+    const r = s / 2;
+    g.ellipse(0, 0, r, r * 0.38).stroke({ width: Math.max(2, s * 0.04), color: 0xffd54d, alpha: 0.8 });
+    g.circle(0, 0, r * 0.72).fill({ color: 0x31205f, alpha: 0.98 });
+    g.poly([0, -r * 0.62, r * 0.18, -r * 0.18, r * 0.62, 0, r * 0.18, r * 0.18, 0, r * 0.62, -r * 0.18, r * 0.18, -r * 0.62, 0, -r * 0.18, -r * 0.18])
+      .fill(0xffd54d);
+    g.circle(0, 0, r * 0.16).fill(0xfff6d8);
   },
 };
 

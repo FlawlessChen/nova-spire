@@ -59,6 +59,47 @@ export const ENEMIES: Record<string, EnemyDefinition> = {
       },
     ],
   },
+  voidLeech: {
+    id: 'voidLeech', name: 'Void Leech', ai: 'random',
+    maxHp: [26, 31],
+    moves: [
+      {
+        id: 'drain', weight: 55,
+        intents: [
+          { kind: 'dealDamage', target: 'opponent', value: 6 },
+          { kind: 'heal', target: 'self', value: 4 },
+        ],
+      },
+      {
+        id: 'numbingBite', weight: 45,
+        intents: [
+          { kind: 'dealDamage', target: 'opponent', value: 5 },
+          { kind: 'applyStatus', target: 'opponent', status: 'weak', amount: 1 },
+        ],
+      },
+    ],
+  },
+  spireDrone: {
+    id: 'spireDrone', name: 'Spire Drone', ai: 'random',
+    maxHp: [30, 35],
+    moves: [
+      {
+        id: 'pulseShot', weight: 50,
+        intents: [{ kind: 'dealDamage', target: 'opponent', value: 9 }],
+      },
+      {
+        id: 'chargeField', weight: 30,
+        intents: [
+          { kind: 'gainBlock', target: 'self', value: 7 },
+          { kind: 'applyStatus', target: 'self', status: 'strength', amount: 1 },
+        ],
+      },
+      {
+        id: 'disrupt', weight: 20,
+        intents: [{ kind: 'applyStatus', target: 'opponent', status: 'vulnerable', amount: 1 }],
+      },
+    ],
+  },
   // ── M4 elites: tougher, with threatening intent combos ──
   gremlinNob: {
     id: 'gremlinNob', name: 'Gremlin Nob', ai: 'random',
@@ -125,6 +166,33 @@ export const ENEMIES: Record<string, EnemyDefinition> = {
         id: 'defensiveMode', weight: 25,
         intents: [
           { kind: 'gainBlock', target: 'self', value: 20 },
+          { kind: 'applyStatus', target: 'self', status: 'strength', amount: 2 },
+        ],
+      },
+    ],
+  },
+  astralTitan: {
+    id: 'astralTitan', name: 'Astral Titan', ai: 'random',
+    maxHp: [96, 96],
+    moves: [
+      {
+        id: 'starfall', weight: 40,
+        intents: [
+          { kind: 'dealDamage', target: 'opponent', value: 12 },
+          { kind: 'applyStatus', target: 'opponent', status: 'weak', amount: 1 },
+        ],
+      },
+      {
+        id: 'gravityWell', weight: 30,
+        intents: [
+          { kind: 'dealDamage', target: 'opponent', value: 8 },
+          { kind: 'applyStatus', target: 'opponent', status: 'vulnerable', amount: 1 },
+        ],
+      },
+      {
+        id: 'stellarShell', weight: 30,
+        intents: [
+          { kind: 'gainBlock', target: 'self', value: 18 },
           { kind: 'applyStatus', target: 'self', status: 'strength', amount: 2 },
         ],
       },

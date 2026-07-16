@@ -54,7 +54,7 @@ export function generateMap(rng: SeededRNG, config: MapGenConfig = DEFAULT_MAP_C
         layer,
         col: 0,
         next: [],
-        encounterId: 'boss-guardian',
+        encounterId: assignEncounter(rng, 'boss'),
       };
       nodes[boss.id] = boss;
       layerIds.push(boss.id);

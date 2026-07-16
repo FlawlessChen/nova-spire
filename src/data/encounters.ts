@@ -16,6 +16,9 @@ export const BATTLE_ENCOUNTERS: EncounterDefinition[] = [
   { id: 'lone-jawworm', enemies: ['jawWorm'] },
   { id: 'slime-pair', enemies: ['slime', 'slime'] },
   { id: 'slime-and-cultist', enemies: ['slime', 'cultist'] },
+  { id: 'lone-void-leech', enemies: ['voidLeech'] },
+  { id: 'lone-spire-drone', enemies: ['spireDrone'] },
+  { id: 'drone-and-leech', enemies: ['spireDrone', 'voidLeech'] },
 ];
 
 // Elites — tougher groups for 'elite' nodes.
@@ -28,15 +31,15 @@ export const ELITE_ENCOUNTERS: EncounterDefinition[] = [
 ];
 
 // The boss — fixed for MVP.
-export const BOSS_ENCOUNTER: EncounterDefinition = {
-  id: 'boss-guardian',
-  enemies: ['guardian'],
-};
+export const BOSS_ENCOUNTERS: EncounterDefinition[] = [
+  { id: 'boss-guardian', enemies: ['guardian'] },
+  { id: 'boss-astral-titan', enemies: ['astralTitan'] },
+];
 
 // Flat lookup by id (all pools + boss), so RunManager can resolve any
 // encounterId a node carries.
 export const ENCOUNTERS: Record<string, EncounterDefinition> = Object.fromEntries(
-  [...BATTLE_ENCOUNTERS, ...ELITE_ENCOUNTERS, BOSS_ENCOUNTER].map((e) => [e.id, e]),
+  [...BATTLE_ENCOUNTERS, ...ELITE_ENCOUNTERS, ...BOSS_ENCOUNTERS].map((e) => [e.id, e]),
 );
 
 // Which pool a node type draws from (campfire has no encounter).
@@ -47,7 +50,7 @@ export function encounterPoolFor(type: NodeType): EncounterDefinition[] {
     case 'elite':
       return ELITE_ENCOUNTERS;
     case 'boss':
-      return [BOSS_ENCOUNTER];
+      return BOSS_ENCOUNTERS;
     case 'campfire':
     case 'shop':
       return [];

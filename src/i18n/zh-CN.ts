@@ -138,6 +138,9 @@ export const zhCN: Locale = {
     gremlinNob: '地精首领',
     sentry: '哨卫',
     guardian: '守护者',
+    voidLeech: '虚空水蛭',
+    spireDrone: '尖塔无人机',
+    astralTitan: '星界泰坦',
   },
 
   relics: {
