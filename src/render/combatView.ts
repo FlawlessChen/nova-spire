@@ -49,6 +49,7 @@ export class CombatView {
   // full re-renders (render() only clears root, then re-attaches this layer).
   private fxLayer = new Container();
   private floats: { node: Text; life: number }[] = [];
+  private flashes: { node: Graphics; life: number }[] = [];
   private outcomeSoundPlayed = false;
   private shakeFrames = 0;
 
@@ -77,6 +78,7 @@ export class CombatView {
           this.pushLog(L.ui.logPlayerHit(e.amount, e.blocked));
         }
         this.spawnDamageFloat(e.targetId, e.amount, e.blocked);
+        if (e.amount > 0) this.spawnImpactFlash(e.targetId);
         playSound(e.amount > 0 ? 'hit' : 'block');
         if (e.amount > 0) this.shakeFrames = Math.max(this.shakeFrames, e.targetId === PLAYER_ID ? 8 : 5);
         break;
@@ -99,6 +101,15 @@ export class CombatView {
         f.node.alpha = Math.max(0, Math.min(1, f.life / 45));
       }
       this.floats = this.floats.filter((f) => {
+        if (f.life <= 0) {
+          this.fxLayer.removeChild(f.node);
+          return false;
+        }
+        return true;
+      });
+      this.flashes = this.flashes.filter((f) => {
+        f.life -= 1;
+        f.node.alpha = Math.max(0, f.life / 12);
         if (f.life <= 0) {
           this.fxLayer.removeChild(f.node);
           return false;
@@ -128,6 +139,15 @@ export class CombatView {
     const node = this.label(text, amount >= 10 ? 30 : 24, color, pos.x, pos.y, 0.5);
     this.fxLayer.addChild(node);
     this.floats.push({ node, life: 75 });
+  }
+
+  private spawnImpactFlash(targetId: string): void {
+    const pos = this.positionFor(targetId);
+    if (!pos) return;
+    const flash = new Graphics().circle(pos.x, pos.y, 62).fill({ color: 0xffffff, alpha: 0.4 });
+    flash.blendMode = 'add';
+    this.fxLayer.addChild(flash);
+    this.flashes.push({ node: flash, life: 12 });
   }
 
   // Approximate on-screen anchor of a combatant, mirroring drawPlayer/drawEnemies.
