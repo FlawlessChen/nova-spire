@@ -54,6 +54,32 @@ export interface Locale {
     pathStartDeck: string;
     pathStartRelic: string;
     startRun: string;
+    // title / menu
+    gameSubtitle: string;
+    menuNewRun: string;
+    menuContinue: string;
+    menuHowToPlay: string;
+    menuAbout: string;
+    back: string;
+    close: string;
+    // help
+    helpTitle: string;
+    helpSections: { heading: string; body: string }[];
+    aboutTitle: string;
+    aboutBody: string;
+    // in-run menu / settings
+    menu: string;
+    sound: string;
+    soundOn: string;
+    soundOff: string;
+    abandonRun: string;
+    abandonConfirm: string;
+    resume: string;
+    viewDeck: string;
+    deckTitle: (n: number) => string;
+    drawPileTitle: (n: number) => string;
+    discardPileTitle: (n: number) => string;
+    emptyPile: string;
   };
   cards: Record<string, { name: string; desc: string }>;
   enemies: Record<string, string>;

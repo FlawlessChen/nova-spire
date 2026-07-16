@@ -8,28 +8,64 @@ import { MapView } from '@/render/mapView';
 import { RewardView } from '@/render/rewardView';
 import { CampfireView } from '@/render/campfireView';
 import { PathSelectView } from '@/render/pathSelectView';
+import { TitleView } from '@/render/titleView';
+import { HelpView } from '@/render/helpView';
+import { PauseMenu } from '@/render/pauseMenu';
+import { DeckView } from '@/render/deckView';
+import { toggleMute } from '@/render/sound';
+import { L } from '@/i18n';
 
-// App: the top-level FSM that binds RunManager phases to the right view. It owns
-// the single active view under `root`, swaps it whenever the run phase changes,
-// and persists after every change via SaveManager. Combat is the one phase that
-// spins up a CombatEngine; on combat end it feeds the result back to the run.
-//
-// Before a run exists (no resumable save), the App shows a hero-path selection
-// screen; the chosen path seeds RunManager.newRun.
+// App: the top-level FSM. Two stacked layers:
+//   screenLayer — the current primary screen (title / path-select / run views)
+//   overlayLayer — modal overlays on top (help, pause menu, deck viewer)
+// A run's phase (map/combat/reward/campfire) drives the screen; the title and
+// path-select gates sit in front of a run. Persistence via SaveManager onChange.
+
+type Overlay = { root: Container; render: () => void };
 
 export class App {
   readonly root = new Container();
+  private screenLayer = new Container();
+  private overlayLayer = new Container();
+
   private mgr: RunManager | null = null;
   private save: SaveManager;
   private currentPhaseKey = '';
   private activeView: { root: Container } | null = null;
+  private activeOverlay: Overlay | null = null;
 
   constructor(save: SaveManager = new SaveManager()) {
     this.save = save;
+    this.root.addChild(this.screenLayer);
+    this.root.addChild(this.overlayLayer);
   }
 
-  /** Start: resume a saved run if present, else offer hero-path selection. */
+  /** Start on the title screen. */
   start(): void {
+    this.showTitle();
+  }
+
+  // ── title / gates ──
+  private showTitle(): void {
+    this.mgr = null;
+    this.clearOverlay();
+    this.currentPhaseKey = 'title';
+    const canContinue = this.save.hasSave() && this.savedResumable();
+    const view = new TitleView(canContinue, {
+      onNewRun: () => this.showPathSelect(),
+      onContinue: () => this.continueRun(),
+      onHowToPlay: () => this.openOverlay(new HelpView('help', () => this.clearOverlay())),
+      onAbout: () => this.openOverlay(new HelpView('about', () => this.clearOverlay())),
+    });
+    this.setScreen(view);
+  }
+
+  private savedResumable(): boolean {
+    const s = this.save.load();
+    return !!s && s.phase !== 'won' && s.phase !== 'lost';
+  }
+
+  private continueRun(): void {
     const saved = this.save.load();
     if (saved && saved.phase !== 'won' && saved.phase !== 'lost') {
       this.attach(RunManager.fromState(saved));
@@ -38,13 +74,13 @@ export class App {
     }
   }
 
-  // Hero-path selection gate — shown when there's no run to resume.
+  // Hero-path selection gate.
   private showPathSelect(): void {
     this.mgr = null;
+    this.clearOverlay();
     this.currentPhaseKey = 'pathSelect';
-    this.root.removeChildren();
     const view = new PathSelectView((pathId) => this.newRun(pathId));
-    this.setActive(view);
+    this.setScreen(view);
   }
 
   private newRun(pathId: string): void {
@@ -55,26 +91,21 @@ export class App {
   private attach(mgr: RunManager): void {
     this.mgr = mgr;
     mgr.onChange((s) => this.save.save(s));
-    // force a first render regardless of phase
     this.currentPhaseKey = '';
     this.syncView();
   }
 
-  // Re-evaluate which view should be showing. Combat re-uses its engine/view
-  // across re-renders (keyed by the combat node), so we don't rebuild it every
-  // time the player plays a card.
+  // ── run phase → screen ──
   private syncView(): void {
     const mgr = this.mgr;
     if (!mgr) return;
     const phase = mgr.state.phase;
     const key = this.viewKey();
     if (key === this.currentPhaseKey) {
-      // same logical view — just re-render it
       this.renderActive();
       return;
     }
     this.currentPhaseKey = key;
-    this.root.removeChildren();
 
     switch (phase) {
       case 'map':
@@ -94,11 +125,9 @@ export class App {
     }
   }
 
-  // A key that changes only when the ACTIVE VIEW should change. Combat is keyed
-  // by the current node so a new battle rebuilds, but playing cards doesn't.
   private viewKey(): string {
     const s = this.mgr?.state;
-    if (!s) return 'pathSelect';
+    if (!s) return this.currentPhaseKey || 'title';
     switch (s.phase) {
       case 'combat':
         return `combat:${s.currentNodeId}`;
@@ -118,40 +147,45 @@ export class App {
     v?.render?.();
   }
 
-  /** Re-render the active view in place (e.g. after an orientation change). */
+  /** Re-render the active screen + overlay in place (e.g. after rotation). */
   rerender(): void {
     this.renderActive();
+    this.activeOverlay?.render();
   }
 
-  // ── view builders ──
+  // ── run view builders ──
   private showMap(): void {
     const mgr = this.mgr!;
     const view = new MapView(mgr, (nodeId) => {
       if (nodeId === '__restart__') {
         this.save.clear();
-        this.showPathSelect(); // a new run picks a fresh path
+        this.showTitle(); // finished run → back to the front door
         return;
       }
       mgr.enterNode(nodeId);
       this.syncView();
+    }, {
+      onMenu: () => this.openPauseMenu(),
+      onViewDeck: () => this.openDeck(),
     });
-    this.setActive(view);
+    this.setScreen(view);
   }
 
   private showCombat(): void {
     const mgr = this.mgr!;
     const engine = new CombatEngine(mgr.combatConfigForCurrentNode());
-    // Wire the player's relics as event-bus subscribers BEFORE start(), so
-    // onCombatStart relics fire on turn 1. The engine stays unaware of relics.
     const relicEngine = new RelicEngine(engine, mgr.state.relics);
     relicEngine.attach(engine.bus);
     const view = new CombatView(engine, (won, playerHp) => {
       relicEngine.detach();
       mgr.resolveCombat(won, playerHp);
       this.syncView();
-    }, mgr.state.relics);
+    }, mgr.state.relics, {
+      onMenu: () => this.openPauseMenu(),
+      onViewPile: (which) => this.openPile(engine, which),
+    });
     engine.start();
-    this.setActive(view);
+    this.setScreen(view);
   }
 
   private showReward(): void {
@@ -161,7 +195,7 @@ export class App {
       mgr.chooseReward(cardId);
       this.syncView();
     }, mgr.state.pendingRelic);
-    this.setActive(view);
+    this.setScreen(view);
   }
 
   private showCampfire(): void {
@@ -170,12 +204,53 @@ export class App {
       mgr.restAtCampfire();
       this.syncView();
     });
-    this.setActive(view);
+    this.setScreen(view);
   }
 
-  private setActive(view: { root: Container; render: () => void }): void {
+  // ── overlays ──
+  private openPauseMenu(): void {
+    this.openOverlay(new PauseMenu({
+      onResume: () => this.clearOverlay(),
+      onHowToPlay: () => this.openOverlay(new HelpView('help', () => this.openPauseMenu())),
+      onToggleSound: () => { toggleMute(); this.activeOverlay?.render(); },
+      onAbandon: () => { this.save.clear(); this.showTitle(); },
+    }));
+  }
+
+  private openDeck(): void {
+    const mgr = this.mgr;
+    if (!mgr) return;
+    this.openOverlay(new DeckView(
+      L.ui.deckTitle(mgr.state.deck.length),
+      mgr.state.deck,
+      () => this.clearOverlay(),
+    ));
+  }
+
+  private openPile(engine: CombatEngine, which: 'draw' | 'discard'): void {
+    const pile = which === 'draw' ? engine.state.drawPile : engine.state.discardPile;
+    const ids = pile.map((c) => c.definitionId);
+    const title = which === 'draw' ? L.ui.drawPileTitle(ids.length) : L.ui.discardPileTitle(ids.length);
+    this.openOverlay(new DeckView(title, ids, () => this.clearOverlay()));
+  }
+
+  private openOverlay(overlay: Overlay): void {
+    this.activeOverlay = overlay;
+    this.overlayLayer.removeChildren();
+    this.overlayLayer.addChild(overlay.root);
+    overlay.render();
+  }
+
+  private clearOverlay(): void {
+    this.activeOverlay = null;
+    this.overlayLayer.removeChildren();
+  }
+
+  private setScreen(view: { root: Container; render: () => void }): void {
+    this.clearOverlay();
     this.activeView = view;
-    this.root.addChild(view.root);
+    this.screenLayer.removeChildren();
+    this.screenLayer.addChild(view.root);
     view.render();
   }
 }

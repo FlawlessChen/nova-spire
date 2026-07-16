@@ -37,6 +37,7 @@ export class MapView {
   constructor(
     private mgr: RunManager,
     private onEnterNode: (nodeId: string) => void,
+    private actions?: { onMenu: () => void; onViewDeck: () => void },
   ) {}
 
   render(): void {
@@ -52,6 +53,13 @@ export class MapView {
     if (state.relics.length > 0) {
       const names = state.relics.map((id) => relicName(id)).join('、');
       this.root.addChild(label(L.ui.relicsLine(names), 15, UI.gold, 40, 112));
+    }
+
+    // top-right: view deck + menu
+    if (this.actions) {
+      const bw = 110;
+      this.root.addChild(button(L.ui.viewDeck, layout.W - bw * 2 - 26, 20, this.actions.onViewDeck, { width: bw, height: 40, fontSize: 16, color: 0x2a3352 }));
+      this.root.addChild(button(L.ui.menu, layout.W - bw - 14, 20, this.actions.onMenu, { width: bw, height: 40, fontSize: 16, color: 0x2a3352 }));
     }
 
     const reachable = new Set(this.mgr.availableNodes().map((n) => n.id));

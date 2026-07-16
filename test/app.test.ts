@@ -74,21 +74,22 @@ class FakeStorage implements StorageBackend {
   }
 }
 
-// Reach into the App's private RunManager to drive the run without a real UI.
+// Reach into the App's private internals to drive flows without a real UI.
 type AppInternals = {
   mgr: import('@/game/runManager').RunManager | null;
   syncView(): void;
   start(): void;
   newRun(pathId: string): void;
+  showPathSelect(): void;
+  continueRun(): void;
   root: { children: unknown[] };
 };
 
-// Start an app and, if it landed on path-select (no resumable save), pick a
-// path so `mgr` exists. Returns the app cast to its internals.
+// Start an app past the title + path-select gates so `mgr` exists.
 function begin(save: SaveManager): AppInternals {
   const app = new App(save) as unknown as AppInternals;
-  app.start();
-  if (!app.mgr) app.newRun('berserker');
+  app.start();          // title screen
+  app.newRun('berserker'); // pick a path → run begins
   return app;
 }
 
@@ -101,11 +102,10 @@ describe('App FSM', () => {
     save = new SaveManager(backend);
   });
 
-  it('shows path select first, then starts a run on the map', () => {
+  it('opens on the title screen with no run yet', () => {
     const app = new App(save) as unknown as AppInternals;
     app.start();
-    // no run yet — the path-select gate is showing
-    expect(app.mgr).toBeNull();
+    expect(app.mgr).toBeNull(); // title gate — run not created
     expect(app.root.children.length).toBeGreaterThan(0);
     // choosing a path begins the run on the map
     app.newRun('berserker');
@@ -142,7 +142,7 @@ describe('App FSM', () => {
     expect(app.mgr!.state.deck.length).toBe(deckBefore + 1);
   });
 
-  it('persists progress and resumes a saved run on restart', () => {
+  it('persists progress and resumes a saved run from the title', () => {
     const app1 = begin(save);
     const battle = app1.mgr!.availableNodes().find((n) => n.type === 'battle')!;
     app1.mgr!.enterNode(battle.id);
@@ -152,9 +152,11 @@ describe('App FSM', () => {
     const visited = app1.mgr!.state.visitedNodeIds.slice();
     const pathId = app1.mgr!.state.pathId;
 
-    // a new App with the SAME backend should resume, not start fresh
+    // a new App with the SAME backend: title shows, then Continue resumes it
     const app2 = new App(new SaveManager(backend)) as unknown as AppInternals;
     app2.start();
+    expect(app2.mgr).toBeNull(); // title gate first
+    app2.continueRun();
     expect(app2.mgr).not.toBeNull();
     expect(app2.mgr!.state.visitedNodeIds).toEqual(visited);
     expect(app2.mgr!.state.deck.length).toBe(deckLen);
@@ -162,16 +164,18 @@ describe('App FSM', () => {
     expect(app2.mgr!.state.pathId).toBe(pathId);
   });
 
-  it('does not resume a finished run', () => {
+  it('does not resume a finished run (continue falls through to path select)', () => {
     const app1 = begin(save);
     const node = app1.mgr!.availableNodes()[0];
     app1.mgr!.enterNode(node.id);
     app1.mgr!.resolveCombat(false, 0); // lose
     expect(app1.mgr!.state.phase).toBe('lost');
 
-    // new App should show path-select again (a lost run isn't resumed)
+    // a lost run isn't resumable: continue lands on path-select, not a run
     const app2 = new App(new SaveManager(backend)) as unknown as AppInternals;
     app2.start();
     expect(app2.mgr).toBeNull();
+    app2.continueRun();
+    expect(app2.mgr).toBeNull(); // no resumable run → path-select gate
   });
 });

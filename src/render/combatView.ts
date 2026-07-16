@@ -55,6 +55,7 @@ export class CombatView {
     private engine: CombatEngine,
     private onCombatEnd: (won: boolean, playerHp: number) => void,
     private relicIds: string[] = [],
+    private actions?: { onMenu: () => void; onViewPile: (which: 'draw' | 'discard') => void },
   ) {
     this.engine.bus.subscribe((e) => this.onEvent(e));
     this.startFxLoop();
@@ -203,12 +204,27 @@ export class CombatView {
   private drawHeader(): void {
     const state = this.engine.state;
     this.root.addChild(this.label(L.ui.turn(state.turn), 24, COLOR.text, layout.W / 2, 16, 0.5));
-    this.root.addChild(
-      this.label(L.ui.drawPile(state.drawPile.length), 15, COLOR.subtle, 20, layout.H - 26),
-    );
+
+    // draw/discard pile counters — tappable to inspect the pile
+    const drawLbl = this.label(L.ui.drawPile(state.drawPile.length), 15, COLOR.subtle, 20, layout.H - 26);
     const discard = this.label(L.ui.discardPile(state.discardPile.length), 15, COLOR.subtle, layout.W - 20, layout.H - 26);
     discard.anchor.set(1, 0);
+    if (this.actions) {
+      for (const [lbl, which] of [[drawLbl, 'draw'], [discard, 'discard']] as const) {
+        lbl.eventMode = 'static';
+        lbl.cursor = 'pointer';
+        lbl.on('pointertap', () => this.actions!.onViewPile(which));
+      }
+    }
+    this.root.addChild(drawLbl);
     this.root.addChild(discard);
+
+    // menu button, top-right
+    if (this.actions) {
+      this.root.addChild(
+        button(L.ui.menu, layout.W - 96, 12, () => this.actions!.onMenu(), { width: 84, height: 34, fontSize: 15, color: 0x2a3352 }),
+      );
+    }
 
     // relic bar: small pills across the top-left (their own row in portrait)
     let rx = layout.portrait ? 16 : 30;

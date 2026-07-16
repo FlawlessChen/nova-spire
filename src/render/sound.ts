@@ -15,6 +15,30 @@ const TONES: Record<SoundKind, [number, number, number]> = {
 };
 
 let ctx: AudioContext | null | undefined; // undefined = not probed yet
+let muted = false;
+
+// Persist the mute preference across sessions (best-effort; never throws).
+const MUTE_KEY = 'nova-spire:muted';
+try {
+  if (typeof localStorage !== 'undefined') muted = localStorage.getItem(MUTE_KEY) === '1';
+} catch {
+  /* ignore */
+}
+
+export function isMuted(): boolean {
+  return muted;
+}
+
+/** Toggle mute, persist the choice, and return the new state. */
+export function toggleMute(): boolean {
+  muted = !muted;
+  try {
+    if (typeof localStorage !== 'undefined') localStorage.setItem(MUTE_KEY, muted ? '1' : '0');
+  } catch {
+    /* ignore */
+  }
+  return muted;
+}
 
 function audioContext(): AudioContext | null {
   if (ctx !== undefined) return ctx;
@@ -28,6 +52,7 @@ function audioContext(): AudioContext | null {
 }
 
 export function playSound(kind: SoundKind): void {
+  if (muted) return;
   const ac = audioContext();
   if (!ac) return;
   try {
