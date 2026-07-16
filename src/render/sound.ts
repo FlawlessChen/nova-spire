@@ -16,6 +16,8 @@ const TONES: Record<SoundKind, [number, number, number]> = {
 
 let ctx: AudioContext | null | undefined; // undefined = not probed yet
 let muted = false;
+let ambientOsc: OscillatorNode | null = null;
+let ambientGain: GainNode | null = null;
 
 // Persist the mute preference across sessions (best-effort; never throws).
 const MUTE_KEY = 'nova-spire:muted';
@@ -37,6 +39,8 @@ export function toggleMute(): boolean {
   } catch {
     /* ignore */
   }
+  if (muted) stopAmbient();
+  else ensureAmbient();
   return muted;
 }
 
@@ -51,11 +55,45 @@ function audioContext(): AudioContext | null {
   return ctx;
 }
 
+function ensureAmbient(): void {
+  if (muted || ambientOsc) return;
+  const ac = audioContext();
+  if (!ac) return;
+  try {
+    const osc = ac.createOscillator();
+    const gain = ac.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = 55;
+    gain.gain.setValueAtTime(0.006, ac.currentTime);
+    osc.connect(gain).connect(ac.destination);
+    osc.start();
+    ambientOsc = osc;
+    ambientGain = gain;
+  } catch {
+    ambientOsc = null;
+    ambientGain = null;
+  }
+}
+
+function stopAmbient(): void {
+  try {
+    ambientGain?.gain.setValueAtTime(0.0001, audioContext()?.currentTime ?? 0);
+    ambientOsc?.stop();
+  } catch {
+    /* ignore */
+  }
+  ambientOsc = null;
+  ambientGain = null;
+}
+
 export function playSound(kind: SoundKind): void {
   if (muted) return;
   const ac = audioContext();
   if (!ac) return;
   try {
+    // Browser audio starts only after a user gesture; the first gameplay sound
+    // is therefore the safest point to lazily begin the ambient drone.
+    ensureAmbient();
     const [freq, dur, gain] = TONES[kind];
     const osc = ac.createOscillator();
     const g = ac.createGain();
