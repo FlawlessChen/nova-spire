@@ -54,14 +54,14 @@ export class TitleView {
     const step = 70;
 
     if (this.canContinue) {
-      this.root.addChild(button(L.ui.menuContinue, cx - btnW / 2, by, this.actions.onContinue, { width: btnW, height: 56, color: UI.buttonAlt }));
+      this.root.addChild(button(L.ui.menuContinue, cx - btnW / 2, by, this.actions.onContinue, { width: btnW, height: 56, color: UI.buttonAlt, icon: 'unlocked' }));
       by += step;
     }
-    this.root.addChild(button(L.ui.menuNewRun, cx - btnW / 2, by, this.actions.onNewRun, { width: btnW, height: 56 }));
+    this.root.addChild(button(L.ui.menuNewRun, cx - btnW / 2, by, this.actions.onNewRun, { width: btnW, height: 56, icon: 'star' }));
     by += step;
     // secondary row: how-to-play + about side by side
     const halfW = (btnW - 16) / 2;
-    this.root.addChild(button(L.ui.menuHowToPlay, cx - btnW / 2, by, this.actions.onHowToPlay, { width: halfW, height: 50, fontSize: 17, color: 0x2a3352 }));
-    this.root.addChild(button(L.ui.menuAbout, cx - btnW / 2 + halfW + 16, by, this.actions.onAbout, { width: halfW, height: 50, fontSize: 17, color: 0x2a3352 }));
+    this.root.addChild(button(L.ui.menuHowToPlay, cx - btnW / 2, by, this.actions.onHowToPlay, { width: halfW, height: 50, fontSize: 17, color: 0x2a3352, icon: 'help' }));
+    this.root.addChild(button(L.ui.menuAbout, cx - btnW / 2 + halfW + 16, by, this.actions.onAbout, { width: halfW, height: 50, fontSize: 17, color: 0x2a3352, icon: 'help' }));
   }
 }

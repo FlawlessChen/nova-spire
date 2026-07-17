@@ -42,21 +42,21 @@ export class PauseMenu {
     const step = 66;
 
     if (!this.confirmingAbandon) {
-      c.addChild(button(L.ui.resume, bx, by, this.actions.onResume, { width: btnW, height: 50, color: UI.buttonAlt }));
+      c.addChild(button(L.ui.resume, bx, by, this.actions.onResume, { width: btnW, height: 50, color: UI.buttonAlt, icon: 'back' }));
       by += step;
-      c.addChild(button(L.ui.menuHowToPlay, bx, by, this.actions.onHowToPlay, { width: btnW, height: 50 }));
+      c.addChild(button(L.ui.menuHowToPlay, bx, by, this.actions.onHowToPlay, { width: btnW, height: 50, icon: 'help' }));
       by += step;
       const soundLabel = `${L.ui.sound}：${isMuted() ? L.ui.soundOff : L.ui.soundOn}`;
-      c.addChild(button(soundLabel, bx, by, () => this.actions.onToggleSound(), { width: btnW, height: 50 }));
+      c.addChild(button(soundLabel, bx, by, () => this.actions.onToggleSound(), { width: btnW, height: 50, icon: isMuted() ? 'audioOff' : 'audioOn' }));
       by += step;
-      c.addChild(button(L.ui.abandonRun, bx, by, () => { this.confirmingAbandon = true; this.render(); }, { width: btnW, height: 50, color: 0x6e2634 }));
+      c.addChild(button(L.ui.abandonRun, bx, by, () => { this.confirmingAbandon = true; this.render(); }, { width: btnW, height: 50, color: 0x6e2634, icon: 'removeCard' }));
     } else {
       // abandon confirmation
       c.addChild(label(L.ui.abandonConfirm, 15, UI.text, w / 2, 96, 0.5));
       by = 150;
-      c.addChild(button(L.ui.abandonRun, bx, by, this.actions.onAbandon, { width: btnW, height: 50, color: 0x6e2634 }));
+      c.addChild(button(L.ui.abandonRun, bx, by, this.actions.onAbandon, { width: btnW, height: 50, color: 0x6e2634, icon: 'removeCard' }));
       by += step;
-      c.addChild(button(L.ui.back, bx, by, () => { this.confirmingAbandon = false; this.render(); }, { width: btnW, height: 50 }));
+      c.addChild(button(L.ui.back, bx, by, () => { this.confirmingAbandon = false; this.render(); }, { width: btnW, height: 50, icon: 'back' }));
     }
 
     this.root.addChild(c);

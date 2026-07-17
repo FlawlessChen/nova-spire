@@ -49,7 +49,7 @@ export class CampfireView {
 
     // upgrade
     this.root.addChild(label(L.ui.campfireUpgradeHint, 16, UI.subtle, cx, y - 6, 0.5));
-    this.root.addChild(button(L.ui.campfireUpgrade, cx - btnW / 2, y + 12, () => { this.mode = 'upgrade'; this.render(); }, { width: btnW, height: 52, enabled: canUp }));
+    this.root.addChild(button(L.ui.campfireUpgrade, cx - btnW / 2, y + 12, () => { this.mode = 'upgrade'; this.render(); }, { width: btnW, height: 52, enabled: canUp, icon: canUp ? 'unlocked' : 'locked' }));
     if (!canUp) {
       this.root.addChild(label(L.ui.campfireNoUpgrade, 13, UI.subtle, cx, y + 72, 0.5));
     }

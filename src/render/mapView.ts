@@ -64,8 +64,8 @@ export class MapView {
     // top-right: view deck + menu
     if (this.actions) {
       const bw = 110;
-      this.root.addChild(button(L.ui.viewDeck, layout.W - bw * 2 - 26, 20, this.actions.onViewDeck, { width: bw, height: 40, fontSize: 16, color: 0x2a3352 }));
-      this.root.addChild(button(L.ui.menu, layout.W - bw - 14, 20, this.actions.onMenu, { width: bw, height: 40, fontSize: 16, color: 0x2a3352 }));
+      this.root.addChild(button(L.ui.viewDeck, layout.W - bw * 2 - 26, 20, this.actions.onViewDeck, { width: bw, height: 40, fontSize: 16, color: 0x2a3352, icon: 'star' }));
+      this.root.addChild(button(L.ui.menu, layout.W - bw - 14, 20, this.actions.onMenu, { width: bw, height: 40, fontSize: 16, color: 0x2a3352, icon: 'settings' }));
     }
 
     const reachable = new Set(this.mgr.availableNodes().map((n) => n.id));
@@ -114,7 +114,7 @@ export class MapView {
     // if the run is over, offer a restart
     if (this.mgr.isOver()) {
       this.root.addChild(
-        button(state.phase === 'won' ? L.ui.runWonNew : L.ui.runLostNew, layout.W / 2 - 110, layout.H - 74, () => this.onEnterNode('__restart__'), { width: 220, color: state.phase === 'won' ? UI.buttonAlt : UI.button }),
+        button(state.phase === 'won' ? L.ui.runWonNew : L.ui.runLostNew, layout.W / 2 - 110, layout.H - 74, () => this.onEnterNode('__restart__'), { width: 220, color: state.phase === 'won' ? UI.buttonAlt : UI.button, icon: state.phase === 'won' ? 'trophy' : 'back' }),
       );
     }
   }

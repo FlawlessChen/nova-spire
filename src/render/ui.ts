@@ -1,4 +1,5 @@
 import { Container, Graphics, Sprite, Text } from 'pixi.js';
+import { ICONS, type IconKey } from '@/render/artAssets';
 
 const buttonTextureUrl = new URL('../../assets/ui/ui_button_primary.svg', import.meta.url).href;
 const dangerButtonTextureUrl = new URL('../../assets/ui/ui_button_danger.svg', import.meta.url).href;
@@ -82,6 +83,7 @@ export interface ButtonOpts {
   fontSize?: number;
   color?: number;
   enabled?: boolean;
+  icon?: IconKey;
 }
 
 export function button(
@@ -113,7 +115,16 @@ export function button(
   skin.height = h;
   skin.alpha = 0.96;
   c.addChild(skin);
-  c.addChild(label(text, opts.fontSize ?? 20, UI.buttonText, w / 2, h / 2, 0.5));
+  if (opts.icon) {
+    const icon = Sprite.from(ICONS[opts.icon]);
+    const size = Math.min(28, h * 0.5);
+    icon.width = size;
+    icon.height = size;
+    icon.x = 18;
+    icon.y = (h - size) / 2;
+    c.addChild(icon);
+  }
+  c.addChild(label(text, opts.fontSize ?? 20, UI.buttonText, w / 2 + (opts.icon ? 9 : 0), h / 2, 0.5));
 
   if (enabled) {
     c.eventMode = 'static';

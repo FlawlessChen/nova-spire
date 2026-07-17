@@ -1,4 +1,4 @@
-import { Container, Graphics, Text } from 'pixi.js';
+import { Container, Graphics, Sprite, Text } from 'pixi.js';
 import type { CombatEngine } from '@/game/combatEngine';
 import type { EnemyState, GameEvent, StatusInstance, StatusId } from '@/types';
 import { PLAYER_ID } from '@/types';
@@ -11,6 +11,7 @@ import { L, enemyName, relicName, statusShort } from '@/i18n';
 import { UI, button, label as uiLabel, progressBar } from '@/render/ui';
 import { portrait } from '@/render/portraits';
 import { cardFace } from '@/render/cardArt';
+import { EFFECTS } from '@/render/artAssets';
 
 // PixiJS render layer. Reads CombatState and draws it; never mutates game state.
 // All player input flows back through CombatEngine methods. On any engine call
@@ -49,8 +50,8 @@ export class CombatView {
   // full re-renders (render() only clears root, then re-attaches this layer).
   private fxLayer = new Container();
   private floats: { node: Text; life: number }[] = [];
-  private flashes: { node: Graphics; life: number }[] = [];
-  private cardTrails: { node: Graphics; life: number; startX: number; startY: number }[] = [];
+  private flashes: { node: Container; life: number }[] = [];
+  private cardTrails: { node: Container; life: number; startX: number; startY: number }[] = [];
   private outcomeSoundPlayed = false;
   private shakeFrames = 0;
 
@@ -159,17 +160,25 @@ export class CombatView {
   private spawnImpactFlash(targetId: string): void {
     const pos = this.positionFor(targetId);
     if (!pos) return;
-    const flash = new Graphics().circle(pos.x, pos.y, 62).fill({ color: 0xffffff, alpha: 0.4 });
+    const pool = Object.values(EFFECTS);
+    const flash = Sprite.from(pool[Math.floor(Math.random() * pool.length)]);
+    flash.anchor.set(0.5);
+    flash.x = pos.x;
+    flash.y = pos.y;
+    flash.width = 132;
+    flash.height = 132;
+    flash.alpha = 0.7;
     flash.blendMode = 'add';
     this.fxLayer.addChild(flash);
     this.flashes.push({ node: flash, life: 12 });
   }
 
   private spawnCardTrail(): void {
-    const node = new Graphics()
-      .roundRect(-24, -32, 48, 64, 6)
-      .fill({ color: 0x70d8ff, alpha: 0.55 })
-      .stroke({ width: 2, color: 0xffffff, alpha: 0.8 });
+    const node = Sprite.from(EFFECTS.trace);
+    node.anchor.set(0.5);
+    node.width = 86;
+    node.height = 86;
+    node.tint = 0x70d8ff;
     const startX = layout.W / 2;
     const startY = layout.portrait ? 1040 : 590;
     node.x = startX;
@@ -282,7 +291,7 @@ export class CombatView {
     // menu button, top-right
     if (this.actions) {
       this.root.addChild(
-        button(L.ui.menu, layout.W - 96, 12, () => this.actions!.onMenu(), { width: 84, height: 34, fontSize: 15, color: 0x2a3352 }),
+        button(L.ui.menu, layout.W - 96, 12, () => this.actions!.onMenu(), { width: 84, height: 34, fontSize: 15, color: 0x2a3352, icon: 'menu' }),
       );
     }
 
