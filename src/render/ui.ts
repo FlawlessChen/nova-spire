@@ -1,4 +1,9 @@
-import { Container, Graphics, Text } from 'pixi.js';
+import { Container, Graphics, Sprite, Text } from 'pixi.js';
+
+const buttonTextureUrl = new URL('../../assets/ui/ui_button_primary.svg', import.meta.url).href;
+const dangerButtonTextureUrl = new URL('../../assets/ui/ui_button_danger.svg', import.meta.url).href;
+const panelTextureUrl = new URL('../../assets/ui/ui_panel_primary.svg', import.meta.url).href;
+const progressFrameUrl = new URL('../../assets/ui/ui_progress_frame.svg', import.meta.url).href;
 
 // Shared PixiJS UI primitives + the deep-space design tokens ("Nova Spire"
 // theme: sci-fi starfield, mysterious tower). Every view pulls colors from UI
@@ -102,6 +107,12 @@ export function button(
   // top sheen line for a subtle sci-fi gradient feel
   g.roundRect(2, 2, w - 4, h * 0.42, 10).fill({ color: 0xffffff, alpha: 0.06 });
   c.addChild(g);
+  const danger = base === UI.danger || base === 0x6e2634;
+  const skin = Sprite.from(danger ? dangerButtonTextureUrl : buttonTextureUrl);
+  skin.width = w;
+  skin.height = h;
+  skin.alpha = 0.96;
+  c.addChild(skin);
   c.addChild(label(text, opts.fontSize ?? 20, UI.buttonText, w / 2, h / 2, 0.5));
 
   if (enabled) {
@@ -126,14 +137,37 @@ export function button(
   return c;
 }
 
-/** Themed surface: dark panel with hairline border and a faint top sheen. */
-export function panel(w: number, h: number, color: number = UI.panel, radius = 12): Graphics {
+/** Asset-backed metal surface with a procedural fallback underneath. */
+export function panel(w: number, h: number, color: number = UI.panel, radius = 12): Container {
+  const c = new Container();
   const g = new Graphics()
     .roundRect(0, 0, w, h, radius)
     .fill(color)
     .stroke({ width: 1, color: UI.panelBorder, alpha: 0.9 });
   g.roundRect(1, 1, w - 2, Math.max(8, h * 0.3), radius - 1).fill({ color: 0xffffff, alpha: 0.035 });
-  return g;
+  c.addChild(g);
+  const skin = Sprite.from(panelTextureUrl);
+  skin.width = w;
+  skin.height = h;
+  skin.alpha = 0.9;
+  c.addChild(skin);
+  return c;
+}
+
+/** Shared HP/progress bar using the selected Adventure UI frame. */
+export function progressBar(w: number, h: number, fraction: number, fillColor: number): Container {
+  const c = new Container();
+  const frac = Math.max(0, Math.min(1, fraction));
+  c.addChild(new Graphics().roundRect(0, 0, w, h, Math.min(6, h / 2)).fill(0x111827));
+  if (frac > 0) {
+    c.addChild(new Graphics().roundRect(3, 3, Math.max(0, (w - 6) * frac), Math.max(1, h - 6), Math.min(4, h / 2)).fill(fillColor));
+  }
+  const frame = Sprite.from(progressFrameUrl);
+  frame.width = w;
+  frame.height = h;
+  frame.alpha = 0.95;
+  c.addChild(frame);
+  return c;
 }
 
 /** Soft glow: layered translucent circles (no filter dependencies). */

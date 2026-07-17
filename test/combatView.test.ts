@@ -36,6 +36,10 @@ vi.mock('pixi.js', () => {
     }
   }
   class Container extends Node {}
+  class Sprite extends Node {
+    tint = 0xffffff;
+    static from(): Sprite { return new Sprite(); }
+  }
   class Graphics extends Node {
     roundRect(): this { return this; }
     rect(): this { return this; }
@@ -55,7 +59,7 @@ vi.mock('pixi.js', () => {
       this.width = this.text.length * 8;
     }
   }
-  return { Container, Graphics, Text };
+  return { Container, Graphics, Sprite, Text };
 });
 
 import { CombatEngine, type CombatConfig } from '@/game/combatEngine';

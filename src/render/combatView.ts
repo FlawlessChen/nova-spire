@@ -8,7 +8,7 @@ import { WEAK_MULTIPLIER, VULNERABLE_MULTIPLIER } from '@/data/statuses';
 import { playSound } from '@/render/sound';
 import { layout } from '@/render/layout';
 import { L, enemyName, relicName, statusShort } from '@/i18n';
-import { UI, button, label as uiLabel } from '@/render/ui';
+import { UI, button, label as uiLabel, progressBar } from '@/render/ui';
 import { portrait } from '@/render/portraits';
 import { cardFace } from '@/render/cardArt';
 
@@ -500,8 +500,7 @@ export class CombatView {
     c.x = x;
     c.y = y;
     const frac = max > 0 ? Math.max(0, Math.min(1, cur / max)) : 0;
-    c.addChild(new Graphics().roundRect(0, 0, w, h, 5).fill(COLOR.hpBg).stroke({ width: 1, color: 0x000000, alpha: 0.4 }));
-    if (frac > 0) c.addChild(new Graphics().roundRect(0, 0, w * frac, h, 5).fill(fill));
+    c.addChild(progressBar(w, h, frac, fill));
     c.addChild(this.label(`${cur}/${max}`, 13, COLOR.text, w / 2, h / 2, 0.5));
     return c;
   }
