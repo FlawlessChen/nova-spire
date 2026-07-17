@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-07-17",
+  "policy": "Only assets with a verifiable CC0 license were collected. No game logic or UI integration was changed.",
+  "sources": {
+    "kenney_ui_pack_sci_fi": {
+      "name": "Kenney UI Pack: Sci-Fi",
+      "page": "https://kenney.nl/assets/ui-pack-sci-fi",
+      "download": "https://kenney.nl/media/pages/assets/ui-pack-sci-fi/b67c2acd31-1724181109/kenney_ui-pack-space-expansion.zip",
+      "license": "CC0 1.0",
+      "licenseFile": "licenses/kenney_ui_pack_sci_fi.txt"
+    },
+    "kenney_game_icons": {
+      "name": "Kenney Game Icons",
+      "page": "https://kenney.nl/assets/game-icons",
+      "download": "https://kenney.nl/media/pages/assets/game-icons/1ebf9c14af-1677661579/kenney_game-icons.zip",
+      "license": "CC0 1.0",
+      "licenseFile": "licenses/kenney_game_icons.txt"
+    },
+    "kenney_particle_pack": {
+      "name": "Kenney Particle Pack",
+      "page": "https://kenney.nl/assets/particle-pack",
+      "download": "https://kenney.nl/media/pages/assets/particle-pack/f8fe0f8cb8-1677578741/kenney_particle-pack.zip",
+      "license": "CC0 1.0",
+      "licenseFile": "licenses/kenney_particle_pack.txt"
+    }
+  },
+  "assets": [
+    { "file": "ui/ui_button_primary.png", "source": "kenney_ui_pack_sci_fi", "license": "CC0 1.0", "usage": "主操作按钮候选贴图" },
+    { "file": "ui/ui_button_secondary.png", "source": "kenney_ui_pack_sci_fi", "license": "CC0 1.0", "usage": "次级操作按钮候选贴图" },
+    { "file": "ui/ui_button_compact.png", "source": "kenney_ui_pack_sci_fi", "license": "CC0 1.0", "usage": "紧凑型菜单按钮候选贴图" },
+    { "file": "ui/ui_bar_gloss.png", "source": "kenney_ui_pack_sci_fi", "license": "CC0 1.0", "usage": "生命、能量或进度条候选贴图" },
+    { "file": "ui/ui_bar_flat.png", "source": "kenney_ui_pack_sci_fi", "license": "CC0 1.0", "usage": "生命、能量或进度条底框候选贴图" },
+
+    { "file": "icons/icon_audio_off.png", "source": "kenney_game_icons", "license": "CC0 1.0", "usage": "静音状态图标" },
+    { "file": "icons/icon_audio_on.png", "source": "kenney_game_icons", "license": "CC0 1.0", "usage": "声音开启状态图标" },
+    { "file": "icons/icon_back.png", "source": "kenney_game_icons", "license": "CC0 1.0", "usage": "返回按钮图标" },
+    { "file": "icons/icon_help.png", "source": "kenney_game_icons", "license": "CC0 1.0", "usage": "玩法说明与帮助图标" },
+    { "file": "icons/icon_locked.png", "source": "kenney_game_icons", "license": "CC0 1.0", "usage": "未解锁成就或进阶难度图标" },
+    { "file": "icons/icon_menu.png", "source": "kenney_game_icons", "license": "CC0 1.0", "usage": "征程内菜单图标" },
+    { "file": "icons/icon_remove_card.png", "source": "kenney_game_icons", "license": "CC0 1.0", "usage": "商店删牌服务图标" },
+    { "file": "icons/icon_settings.png", "source": "kenney_game_icons", "license": "CC0 1.0", "usage": "设置入口图标" },
+    { "file": "icons/icon_star.png", "source": "kenney_game_icons", "license": "CC0 1.0", "usage": "星图、新星或稀有度装饰图标" },
+    { "file": "icons/icon_trophy.png", "source": "kenney_game_icons", "license": "CC0 1.0", "usage": "通关记录与成就入口图标" },
+    { "file": "icons/icon_unlocked.png", "source": "kenney_game_icons", "license": "CC0 1.0", "usage": "已解锁成就或进阶难度图标" },
+
+    { "file": "fx/fx_flare.png", "source": "kenney_particle_pack", "license": "CC0 1.0", "usage": "新星闪光与 Boss 登场特效" },
+    { "file": "fx/fx_magic_burst.png", "source": "kenney_particle_pack", "license": "CC0 1.0", "usage": "能力牌、遗物触发与事件选择特效" },
+    { "file": "fx/fx_magic_ring.png", "source": "kenney_particle_pack", "license": "CC0 1.0", "usage": "地图可达节点与状态触发光环" },
+    { "file": "fx/fx_slash_01.png", "source": "kenney_particle_pack", "license": "CC0 1.0", "usage": "轻型攻击牌斩击轨迹" },
+    { "file": "fx/fx_slash_02.png", "source": "kenney_particle_pack", "license": "CC0 1.0", "usage": "重型攻击牌斩击轨迹" },
+    { "file": "fx/fx_smoke.png", "source": "kenney_particle_pack", "license": "CC0 1.0", "usage": "敌人消散、虚空与环境烟雾" },
+    { "file": "fx/fx_soft_light.png", "source": "kenney_particle_pack", "license": "CC0 1.0", "usage": "按钮、卡牌与角色的柔光叠加" },
+    { "file": "fx/fx_spark.png", "source": "kenney_particle_pack", "license": "CC0 1.0", "usage": "受击、护甲破碎与升级火花" },
+    { "file": "fx/fx_star_01.png", "source": "kenney_particle_pack", "license": "CC0 1.0", "usage": "星空背景与奖励星尘粒子" },
+    { "file": "fx/fx_star_02.png", "source": "kenney_particle_pack", "license": "CC0 1.0", "usage": "稀有卡、遗物与胜利星芒" },
+    { "file": "fx/fx_trace.png", "source": "kenney_particle_pack", "license": "CC0 1.0", "usage": "卡牌飞行和能量弹道轨迹" },
+    { "file": "fx/fx_twirl.png", "source": "kenney_particle_pack", "license": "CC0 1.0", "usage": "毒雾、虚空泉眼和能力旋涡" }
+  ]
+}
