@@ -1,9 +1,10 @@
-import { Container, Graphics } from 'pixi.js';
+import { Container, Graphics, Sprite } from 'pixi.js';
 import type { RunManager } from '@/game/runManager';
 import type { MapNode, NodeType } from '@/types/run';
 import { layout } from '@/render/layout';
 import { L, relicName } from '@/i18n';
 import { label, button, UI } from '@/render/ui';
+import { UI_TEXTURES } from '@/render/artAssets';
 
 // MapView: the star chart. Renders the layered-DAG map as a constellation —
 // layer 0 at the BOTTOM, the boss at the TOP, so the run reads as a climb up
@@ -131,6 +132,14 @@ export class MapView {
     const c = new Container();
     c.x = x;
     c.y = y;
+
+    const nodeSkin = Sprite.from(UI_TEXTURES.nodeHex);
+    nodeSkin.anchor.set(0.5);
+    nodeSkin.width = NODE_R * 2.55;
+    nodeSkin.height = NODE_R * 2.55;
+    nodeSkin.tint = meta.color;
+    nodeSkin.alpha = 0.9;
+    c.addChild(nodeSkin);
 
     // halo for interactable/current nodes
     if (reachable && !this.mgr.isOver()) {

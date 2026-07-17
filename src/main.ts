@@ -1,8 +1,9 @@
-import { Application, Container } from 'pixi.js';
+import { Application, Assets, Container } from 'pixi.js';
 import { App } from '@/render/app';
 import { layout, updateLayout } from '@/render/layout';
 import { Starfield } from '@/render/starfield';
 import { UI } from '@/render/ui';
+import { ALL_ART_ASSET_URLS } from '@/render/artAssets';
 
 // App entry: boots PixiJS, mounts the persistent starfield backdrop and the
 // top-level App (which owns the run FSM and swaps between map / combat /
@@ -19,6 +20,11 @@ async function main(): Promise<void> {
     autoDensity: true,
     resolution: window.devicePixelRatio || 1,
   });
+
+  // PixiJS v8's Sprite.from(string) only reads from the Assets cache; it does
+  // not initiate URL loading. Preload every selected art texture before any
+  // view creates sprites so asset-backed UI/FX are visible on the first frame.
+  await Assets.load(ALL_ART_ASSET_URLS);
 
   const mount = document.getElementById('app');
   if (!mount) throw new Error('#app mount not found');

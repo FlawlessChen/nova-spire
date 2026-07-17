@@ -1,3 +1,13 @@
+export const UI_TEXTURES = {
+  button: new URL('../../assets/ui/ui_button_primary.svg', import.meta.url).href,
+  dangerButton: new URL('../../assets/ui/ui_button_danger.svg', import.meta.url).href,
+  panel: new URL('../../assets/ui/ui_panel_primary.svg', import.meta.url).href,
+  panelFrame: new URL('../../assets/ui/ui_panel_frame.svg', import.meta.url).href,
+  progressFill: new URL('../../assets/ui/ui_progress_fill.svg', import.meta.url).href,
+  progressFrame: new URL('../../assets/ui/ui_progress_frame.svg', import.meta.url).href,
+  nodeHex: new URL('../../assets/ui/ui_node_hex.svg', import.meta.url).href,
+} as const;
+
 export const ICONS = {
   audioOff: new URL('../../assets/icons/icon_audio_off.png', import.meta.url).href,
   audioOn: new URL('../../assets/icons/icon_audio_on.png', import.meta.url).href,
@@ -28,3 +38,9 @@ export const EFFECTS = {
   trace: new URL('../../assets/fx/fx_trace.png', import.meta.url).href,
   twirl: new URL('../../assets/fx/fx_twirl.png', import.meta.url).href,
 } as const;
+
+export const ALL_ART_ASSET_URLS = [
+  ...Object.values(UI_TEXTURES),
+  ...Object.values(ICONS),
+  ...Object.values(EFFECTS),
+];

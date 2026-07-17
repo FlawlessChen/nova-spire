@@ -1,10 +1,5 @@
 import { Container, Graphics, Sprite, Text } from 'pixi.js';
-import { ICONS, type IconKey } from '@/render/artAssets';
-
-const buttonTextureUrl = new URL('../../assets/ui/ui_button_primary.svg', import.meta.url).href;
-const dangerButtonTextureUrl = new URL('../../assets/ui/ui_button_danger.svg', import.meta.url).href;
-const panelTextureUrl = new URL('../../assets/ui/ui_panel_primary.svg', import.meta.url).href;
-const progressFrameUrl = new URL('../../assets/ui/ui_progress_frame.svg', import.meta.url).href;
+import { ICONS, UI_TEXTURES, type IconKey } from '@/render/artAssets';
 
 // Shared PixiJS UI primitives + the deep-space design tokens ("Nova Spire"
 // theme: sci-fi starfield, mysterious tower). Every view pulls colors from UI
@@ -110,7 +105,7 @@ export function button(
   g.roundRect(2, 2, w - 4, h * 0.42, 10).fill({ color: 0xffffff, alpha: 0.06 });
   c.addChild(g);
   const danger = base === UI.danger || base === 0x6e2634;
-  const skin = Sprite.from(danger ? dangerButtonTextureUrl : buttonTextureUrl);
+  const skin = Sprite.from(danger ? UI_TEXTURES.dangerButton : UI_TEXTURES.button);
   skin.width = w;
   skin.height = h;
   skin.alpha = 0.96;
@@ -157,11 +152,16 @@ export function panel(w: number, h: number, color: number = UI.panel, radius = 1
     .stroke({ width: 1, color: UI.panelBorder, alpha: 0.9 });
   g.roundRect(1, 1, w - 2, Math.max(8, h * 0.3), radius - 1).fill({ color: 0xffffff, alpha: 0.035 });
   c.addChild(g);
-  const skin = Sprite.from(panelTextureUrl);
+  const skin = Sprite.from(UI_TEXTURES.panel);
   skin.width = w;
   skin.height = h;
   skin.alpha = 0.9;
   c.addChild(skin);
+  const frame = Sprite.from(UI_TEXTURES.panelFrame);
+  frame.width = w;
+  frame.height = h;
+  frame.alpha = 0.65;
+  c.addChild(frame);
   return c;
 }
 
@@ -171,9 +171,15 @@ export function progressBar(w: number, h: number, fraction: number, fillColor: n
   const frac = Math.max(0, Math.min(1, fraction));
   c.addChild(new Graphics().roundRect(0, 0, w, h, Math.min(6, h / 2)).fill(0x111827));
   if (frac > 0) {
-    c.addChild(new Graphics().roundRect(3, 3, Math.max(0, (w - 6) * frac), Math.max(1, h - 6), Math.min(4, h / 2)).fill(fillColor));
+    const fill = Sprite.from(UI_TEXTURES.progressFill);
+    fill.x = 3;
+    fill.y = 3;
+    fill.width = Math.max(0, (w - 6) * frac);
+    fill.height = Math.max(1, h - 6);
+    fill.tint = fillColor;
+    c.addChild(fill);
   }
-  const frame = Sprite.from(progressFrameUrl);
+  const frame = Sprite.from(UI_TEXTURES.progressFrame);
   frame.width = w;
   frame.height = h;
   frame.alpha = 0.95;
