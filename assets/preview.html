@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nova Spire · 美术资源预览</title>
+  <link rel="stylesheet" href="./preview.css" />
+</head>
+<body>
+  <div class="stars" aria-hidden="true"></div>
+  <main>
+    <header class="hero">
+      <p class="eyebrow">M13.1 · ART DIRECTION</p>
+      <h1>Nova Spire 美术资源预览</h1>
+      <p>自动读取 <code>assets.json</code>，集中审阅候选 UI、图标与战斗特效。此页面仅用于选型，不会改变游戏内资源引用。</p>
+      <div id="summary" class="summary">正在读取资源清单…</div>
+    </header>
+
+    <section class="comparison-section" aria-labelledby="comparison-title">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">CURRENT UI COMPARISON</p>
+          <h2 id="comparison-title">当前 UI 对比</h2>
+        </div>
+        <p>左侧模拟当前程序化绘制风格，右侧展示候选科幻贴图。候选贴图尚未接入游戏。</p>
+      </div>
+      <div class="comparison-grid">
+        <article class="comparison-card">
+          <span class="badge">程序化 UI</span>
+          <div class="demo-stage">
+            <button class="procedural-button">开始征程</button>
+            <button class="procedural-button secondary">查看卡组</button>
+            <div class="procedural-bar"><span style="width: 68%"></span></div>
+          </div>
+          <p>清晰、轻量、可无损缩放；质感主要依赖颜色、描边和微光。</p>
+        </article>
+        <article class="comparison-card">
+          <span class="badge candidate">素材 UI 候选</span>
+          <div class="demo-stage texture-stage">
+            <button class="texture-button primary"><span>开始征程</span></button>
+            <button class="texture-button secondary"><span>查看卡组</span></button>
+            <div class="texture-bar"><span></span></div>
+          </div>
+          <p>机械切口和金属层次更强；正式接入前需要验证九宫格缩放与中文排版。</p>
+        </article>
+      </div>
+    </section>
+
+    <nav id="filters" class="filters" aria-label="资源分类筛选"></nav>
+    <div id="status" class="status" role="status"></div>
+    <div id="catalog"></div>
+  </main>
+
+  <template id="asset-card-template">
+    <article class="asset-card">
+      <div class="asset-preview"><img loading="lazy" alt="" /></div>
+      <div class="asset-info">
+        <h3></h3>
+        <dl>
+          <div><dt>来源</dt><dd class="source"></dd></div>
+          <div><dt>授权</dt><dd class="license"></dd></div>
+          <div><dt>推荐用途</dt><dd class="usage"></dd></div>
+        </dl>
+      </div>
+    </article>
+  </template>
+
+  <script type="module" src="./preview.js"></script>
+</body>
+</html>
