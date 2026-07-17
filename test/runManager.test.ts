@@ -3,6 +3,7 @@ import { RunManager } from '@/game/runManager';
 import { CombatEngine } from '@/game/combatEngine';
 import { RELIC_POOL } from '@/data/relics';
 import type { RunState } from '@/types/run';
+import { EVENTS } from '@/data/events';
 
 // RunManager: the journey FSM. The headline test drives a WHOLE run to a boss
 // kill using the real CombatEngine for every battle — proving the run layer and
@@ -55,11 +56,48 @@ function stepThroughRun(mgr: RunManager, maxSteps = 200): void {
       case 'campfire':
         mgr.restAtCampfire();
         break;
+      case 'shop':
+        mgr.leaveShop();
+        break;
+      case 'event': {
+        const eventId = mgr.state.pendingEventId!;
+        mgr.chooseEvent(EVENTS[eventId].choices[0].id);
+        break;
+      }
     }
   }
 }
 
 describe('RunManager', () => {
+  it('enters and resolves a seeded event choice', () => {
+    const mgr = RunManager.newRun(41);
+    const node = Object.values(mgr.state.map.nodes).find((n) => n.type === 'event');
+    expect(node).toBeTruthy();
+    if (!node) return;
+    mgr.state.map.entryNodeIds = [node.id];
+    mgr.state.currentNodeId = null;
+    mgr.state.phase = 'map';
+    const hp = mgr.state.playerHp;
+    expect(mgr.enterNode(node.id)).toBe(true);
+    expect(mgr.state.phase).toBe('event');
+    const event = EVENTS[mgr.state.pendingEventId!];
+    expect(event).toBeTruthy();
+    expect(mgr.chooseEvent(event.choices[0].id)).toBe(true);
+    expect(mgr.state.phase).toBe('map');
+    expect(mgr.state.pendingEventId).toBeNull();
+    expect(mgr.state.nodesCleared).toBe(1);
+    expect(mgr.state.playerHp).toBeLessThanOrEqual(hp);
+  });
+
+  it('rejects an unknown event choice without mutating progress', () => {
+    const mgr = RunManager.newRun(1);
+    mgr.state.phase = 'event';
+    mgr.state.pendingEventId = 'novaShrine';
+    expect(mgr.chooseEvent('missing')).toBe(false);
+    expect(mgr.state.phase).toBe('event');
+    expect(mgr.state.nodesCleared).toBe(0);
+  });
+
   it('starts on the map with entry nodes available', () => {
     const mgr = RunManager.newRun(1);
     expect(mgr.state.phase).toBe('map');

@@ -44,6 +44,7 @@ import { DeckView } from '@/render/deckView';
 import { PathSelectView } from '@/render/pathSelectView';
 import { ShopView } from '@/render/shopView';
 import { CampfireView } from '@/render/campfireView';
+import { EventView } from '@/render/eventView';
 import { RunManager } from '@/game/runManager';
 import { updateLayout } from '@/render/layout';
 import { isMuted, toggleMute } from '@/render/sound';
@@ -118,6 +119,16 @@ describe('front-end views render', () => {
       mgr.state.phase = 'campfire';
       const v = new CampfireView(mgr, () => {}, () => {});
       expect(() => v.render()).not.toThrow();
+    });
+
+    it(`EventView renders choices in ${tag}`, () => {
+      updateLayout(dims[0], dims[1]);
+      const mgr = RunManager.newRun(3, 'berserker');
+      mgr.state.phase = 'event';
+      mgr.state.pendingEventId = 'novaShrine';
+      const v = new EventView(mgr, () => {});
+      expect(() => v.render()).not.toThrow();
+      expect(childCount(v)).toBeGreaterThan(0);
     });
   }
 });

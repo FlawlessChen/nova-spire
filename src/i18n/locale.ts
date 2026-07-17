@@ -34,6 +34,7 @@ export interface Locale {
     nodeElite: string;
     nodeCampfire: string;
     nodeShop: string;
+    nodeEvent: string;
     nodeBoss: string;
     runWonNew: string;
     runLostNew: string;
@@ -97,10 +98,12 @@ export interface Locale {
     shopLeave: string;
     shopGold: (n: number) => string;
     price: (n: number) => string;
+    eventContinue: string;
   };
   cards: Record<string, { name: string; desc: string; descUpgraded?: string }>;
   enemies: Record<string, string>;
   relics: Record<string, { name: string; desc: string }>;
   statuses: Record<string, { name: string; short: string }>;
   paths: Record<string, { name: string; tagline: string; desc: string }>;
+  events: Record<string, { title: string; body: string; choices: Record<string, string> }>;
 }

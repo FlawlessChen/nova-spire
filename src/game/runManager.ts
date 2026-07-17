@@ -7,6 +7,7 @@ import { STARTING_DECK, REWARD_POOL, CARDS } from '@/data/cards';
 import { RELIC_POOL } from '@/data/relics';
 import { PATHS, DEFAULT_PATH_ID } from '@/data/paths';
 import { canUpgrade, upgradedId } from '@/data/cardUpgrade';
+import { EVENTS } from '@/data/events';
 
 // RunManager: the journey FSM that sits above CombatEngine. It owns RunState
 // transitions — generate map, enter a node, hand out a combat config, apply the
@@ -69,6 +70,7 @@ export class RunManager {
       pendingReward: null,
       pendingRelic: null,
       shop: null,
+      pendingEventId: null,
       combatSeed: null,
     };
     const mgr = new RunManager(state, rng);
@@ -120,6 +122,9 @@ export class RunManager {
     } else if (node.type === 'shop') {
       this.state.phase = 'shop';
       this.state.shop = this.rollShop();
+    } else if (node.type === 'event') {
+      this.state.phase = 'event';
+      this.state.pendingEventId = node.eventId ?? null;
     } else {
       // battle / elite / boss → start combat
       this.state.phase = 'combat';
@@ -324,6 +329,35 @@ export class RunManager {
     this.state.nodesCleared += 1;
     this.state.phase = 'map';
     this.sync();
+  }
+
+  // ── events ──
+  chooseEvent(choiceId: string): boolean {
+    if (this.state.phase !== 'event' || !this.state.pendingEventId) return false;
+    const event = EVENTS[this.state.pendingEventId];
+    const choice = event?.choices.find((entry) => entry.id === choiceId);
+    if (!choice) return false;
+    for (const effect of choice.effects) {
+      switch (effect.kind) {
+        case 'heal':
+          this.state.playerHp = Math.min(this.state.playerMaxHp, this.state.playerHp + effect.amount);
+          break;
+        case 'damage':
+          this.state.playerHp = Math.max(1, this.state.playerHp - effect.amount);
+          break;
+        case 'gold':
+          this.state.gold = Math.max(0, this.state.gold + effect.amount);
+          break;
+        case 'card':
+          this.state.deck.push(effect.cardId);
+          break;
+      }
+    }
+    this.state.pendingEventId = null;
+    this.state.nodesCleared += 1;
+    this.state.phase = 'map';
+    this.sync();
+    return true;
   }
 
   // ── helpers ──

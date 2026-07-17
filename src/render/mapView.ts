@@ -14,6 +14,7 @@ const NODE_META: Record<NodeType, { color: number; glyph: string }> = {
   elite: { color: 0xd8862f, glyph: '☠' },
   campfire: { color: 0x2a8a63, glyph: '🔥' },
   shop: { color: 0x3f6bb5, glyph: '🛒' },
+  event: { color: 0x6d4aa8, glyph: '?' },
   boss: { color: 0x9d6bff, glyph: '♛' },
 };
 
@@ -27,6 +28,8 @@ function nodeLabel(type: NodeType): string {
       return L.ui.nodeCampfire;
     case 'shop':
       return L.ui.nodeShop;
+    case 'event':
+      return L.ui.nodeEvent;
     case 'boss':
       return L.ui.nodeBoss;
   }

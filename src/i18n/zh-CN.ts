@@ -34,6 +34,7 @@ export const zhCN: Locale = {
     nodeElite: '精英',
     nodeCampfire: '篝火',
     nodeShop: '商店',
+    nodeEvent: '事件',
     nodeBoss: 'BOSS',
     runWonNew: '登顶！新的一局',
     runLostNew: '再来一局',
@@ -104,6 +105,7 @@ export const zhCN: Locale = {
     shopLeave: '离开商店',
     shopGold: (n) => `金币：${n}`,
     price: (n) => `${n} 金`,
+    eventContinue: '做出选择',
   },
 
   cards: {
@@ -175,6 +177,24 @@ export const zhCN: Locale = {
       name: '壁垒卫士',
       tagline: '护甲流 · 攻守一体',
       desc: '起手携带铁潮与铁壁，专属遗物「青铜鳞甲」每场开局获得护甲。奖励偏向护甲与攻防转化。',
+    },
+  },
+
+  events: {
+    novaShrine: {
+      title: '新星祭坛',
+      body: '一枚濒临熄灭的星核悬在祭坛中央。它渴望生命，也愿意交换力量。',
+      choices: { offer: '献出 8 点生命，获得「完美打击+」', pray: '静心祈祷，恢复 10 点生命' },
+    },
+    derelictVault: {
+      title: '废弃金库',
+      body: '破损的星港金库仍在报警。门缝后散落着无人认领的铸币。',
+      choices: { force: '强行撬门：失去 5 点生命，获得 55 金币', leave: '谨慎离开' },
+    },
+    voidSpring: {
+      title: '虚空泉眼',
+      body: '黑色泉水映出另一个自己的倒影。倒影伸出手，掌心托着一张卡牌。',
+      choices: { drink: '饮下泉水：恢复 16 点生命', trade: '触碰倒影：失去 6 点生命，获得「收割」' },
     },
   },
 };

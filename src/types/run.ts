@@ -10,7 +10,7 @@
 // strictly forward march with branching choices.
 // ─────────────────────────────────────────────────────────────
 
-export type NodeType = 'battle' | 'elite' | 'campfire' | 'shop' | 'boss';
+export type NodeType = 'battle' | 'elite' | 'campfire' | 'shop' | 'event' | 'boss';
 
 export interface MapNode {
   id: string;            // stable id, convention `n{layer}-{col}` (boss: `n-boss`)
@@ -19,6 +19,7 @@ export interface MapNode {
   col: number;           // column within the layer, for rendering layout
   next: string[];        // ids of reachable nodes in layer+1
   encounterId?: string;  // enemy-group id for battle/elite/boss nodes
+  eventId?: string;      // narrative event id for event nodes
 }
 
 export interface GameMap {
@@ -38,6 +39,7 @@ export type RunPhase =
   | 'reward'    // picking a card reward after winning a battle
   | 'campfire'  // resting at a campfire
   | 'shop'      // browsing a shop
+  | 'event'     // resolving a narrative event choice
   | 'won'       // the boss is dead — run cleared
   | 'lost';     // player died
 
@@ -73,12 +75,13 @@ export interface RunState {
   pendingReward: string[] | null;  // card choices offered after a battle
   pendingRelic: string | null;   // relic dropped by an elite/boss, awaiting pickup
   shop: ShopInventory | null;    // rolled stock while phase === 'shop'
+  pendingEventId: string | null; // event currently awaiting a choice
   combatSeed: number | null;     // seed for the in-progress combat (null outside combat)
 }
 
 // Save-file envelope: a version tag lets us migrate or reject stale saves.
-// v2 added `pathId` (M8); v3 added `shop` (M10). Older saves are rejected.
-export const SAVE_VERSION = 3;
+// v2 added `pathId`; v3 added `shop`; v4 added event nodes.
+export const SAVE_VERSION = 4;
 
 export interface SaveData {
   version: number;

@@ -8,6 +8,7 @@ import { MapView } from '@/render/mapView';
 import { RewardView } from '@/render/rewardView';
 import { CampfireView } from '@/render/campfireView';
 import { ShopView } from '@/render/shopView';
+import { EventView } from '@/render/eventView';
 import { PathSelectView } from '@/render/pathSelectView';
 import { TitleView } from '@/render/titleView';
 import { HelpView } from '@/render/helpView';
@@ -127,6 +128,9 @@ export class App {
       case 'shop':
         this.showShop();
         break;
+      case 'event':
+        this.showEvent();
+        break;
     }
   }
 
@@ -146,6 +150,8 @@ export class App {
         return `campfire:${s.currentNodeId}`;
       case 'shop':
         return `shop:${s.currentNodeId}`;
+      case 'event':
+        return `event:${s.currentNodeId}`;
     }
   }
 
@@ -226,6 +232,14 @@ export class App {
       onLeave: () => { mgr.leaveShop(); this.syncView(); },
     });
     this.setScreen(view);
+  }
+
+  private showEvent(): void {
+    const mgr = this.mgr!;
+    this.setScreen(new EventView(mgr, (choiceId) => {
+      mgr.chooseEvent(choiceId);
+      this.syncView();
+    }));
   }
 
   // ── overlays ──

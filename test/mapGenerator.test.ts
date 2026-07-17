@@ -67,6 +67,18 @@ describe('generateMap', () => {
     expect(JSON.stringify(a)).toBe(JSON.stringify(b));
   });
 
+  it('backs every event node with an event id', () => {
+    let count = 0;
+    for (let seed = 1; seed <= 100; seed++) {
+      const map = generateMap(new SeededRNG(seed));
+      for (const node of Object.values(map.nodes).filter((n) => n.type === 'event')) {
+        expect(node.eventId).toBeTruthy();
+        count++;
+      }
+    }
+    expect(count).toBeGreaterThan(0);
+  });
+
   it('produces different maps for different seeds', () => {
     const a = generateMap(new SeededRNG(1));
     const b = generateMap(new SeededRNG(2));

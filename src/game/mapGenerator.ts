@@ -1,6 +1,7 @@
 import type { GameMap, MapNode, NodeType } from '@/types/run';
 import type { SeededRNG } from '@/core/rng';
 import { encounterPoolFor } from '@/data/encounters';
+import { EVENT_POOL } from '@/data/events';
 
 // Seeded layered-DAG map generator. Produces a strictly-forward map:
 //   layer 0 (entry battles) → intermediate layers → penultimate campfire → boss.
@@ -27,12 +28,13 @@ export const DEFAULT_MAP_CONFIG: MapGenConfig = {
 // the boss is always a campfire row so the player can heal before the finale.
 function pickIntermediateType(rng: SeededRNG, layer: number, lastIntermediate: number): NodeType {
   if (layer === lastIntermediate) return 'campfire';
-  // ~12% shop, ~13% campfire, ~20% elite (elites only from the 2nd
+  // ~10% shop, ~12% event, ~13% campfire, ~20% elite (elites only from the 2nd
   // intermediate layer on), else battle.
   const roll = rng.next();
-  if (roll < 0.12) return 'shop';
-  if (roll < 0.25) return 'campfire';
-  if (layer >= 2 && roll < 0.45) return 'elite';
+  if (roll < 0.10) return 'shop';
+  if (roll < 0.22) return 'event';
+  if (roll < 0.35) return 'campfire';
+  if (layer >= 2 && roll < 0.55) return 'elite';
   return 'battle';
 }
 
@@ -73,6 +75,7 @@ export function generateMap(rng: SeededRNG, config: MapGenConfig = DEFAULT_MAP_C
           col,
           next: [],
           encounterId: assignEncounter(rng, type),
+          eventId: type === 'event' ? rng.pick(EVENT_POOL) : undefined,
         };
         layerIds.push(id);
       }

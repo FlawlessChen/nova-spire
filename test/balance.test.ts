@@ -4,6 +4,7 @@ import { CombatEngine } from '@/game/combatEngine';
 import { RelicEngine } from '@/game/relicEngine';
 import { CARDS } from '@/data/cards';
 import { PATH_IDS } from '@/data/paths';
+import { EVENTS } from '@/data/events';
 
 // Balance regression: auto-play full runs with a simple heuristic pilot and
 // assert the winrate stays inside the design band. This catches accidental
@@ -67,6 +68,11 @@ function autoRun(seed: number, pathId: string): 'won' | 'lost' {
       mgr.chooseReward(atk ?? choices[0] ?? null);
     } else if (phase === 'campfire') {
       mgr.restAtCampfire();
+    } else if (phase === 'shop') {
+      mgr.leaveShop();
+    } else if (phase === 'event') {
+      const event = mgr.state.pendingEventId ? EVENTS[mgr.state.pendingEventId] : null;
+      if (event) mgr.chooseEvent(event.choices[event.choices.length - 1].id);
     }
   }
   return mgr.state.phase === 'won' ? 'won' : 'lost';
