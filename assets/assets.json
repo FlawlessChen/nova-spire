@@ -3,12 +3,12 @@
   "generatedAt": "2026-07-17",
   "policy": "Only assets with a verifiable CC0 license were collected. No game logic or UI integration was changed.",
   "sources": {
-    "kenney_ui_pack_sci_fi": {
-      "name": "Kenney UI Pack: Sci-Fi",
-      "page": "https://kenney.nl/assets/ui-pack-sci-fi",
-      "download": "https://kenney.nl/media/pages/assets/ui-pack-sci-fi/b67c2acd31-1724181109/kenney_ui-pack-space-expansion.zip",
+    "kenney_ui_pack_adventure": {
+      "name": "Kenney UI Pack: Adventure",
+      "page": "https://kenney.nl/assets/ui-pack-adventure",
+      "download": "https://kenney.nl/media/pages/assets/ui-pack-adventure/9a877376bc-1723597274/kenney_ui-pack-adventure.zip",
       "license": "CC0 1.0",
-      "licenseFile": "licenses/kenney_ui_pack_sci_fi.txt"
+      "licenseFile": "licenses/kenney_ui_pack_adventure.txt"
     },
     "kenney_game_icons": {
       "name": "Kenney Game Icons",
@@ -26,11 +26,13 @@
     }
   },
   "assets": [
-    { "file": "ui/ui_button_primary.png", "source": "kenney_ui_pack_sci_fi", "license": "CC0 1.0", "usage": "主操作按钮候选贴图" },
-    { "file": "ui/ui_button_secondary.png", "source": "kenney_ui_pack_sci_fi", "license": "CC0 1.0", "usage": "次级操作按钮候选贴图" },
-    { "file": "ui/ui_button_compact.png", "source": "kenney_ui_pack_sci_fi", "license": "CC0 1.0", "usage": "紧凑型菜单按钮候选贴图" },
-    { "file": "ui/ui_bar_gloss.png", "source": "kenney_ui_pack_sci_fi", "license": "CC0 1.0", "usage": "生命、能量或进度条候选贴图" },
-    { "file": "ui/ui_bar_flat.png", "source": "kenney_ui_pack_sci_fi", "license": "CC0 1.0", "usage": "生命、能量或进度条底框候选贴图" },
+    { "file": "ui/ui_button_primary.svg", "source": "kenney_ui_pack_adventure", "license": "CC0 1.0", "usage": "主操作与菜单按钮候选矢量贴图" },
+    { "file": "ui/ui_button_danger.svg", "source": "kenney_ui_pack_adventure", "license": "CC0 1.0", "usage": "放弃征程等危险操作按钮" },
+    { "file": "ui/ui_panel_primary.svg", "source": "kenney_ui_pack_adventure", "license": "CC0 1.0", "usage": "商店、事件与菜单的灰蓝金属面板" },
+    { "file": "ui/ui_panel_frame.svg", "source": "kenney_ui_pack_adventure", "license": "CC0 1.0", "usage": "卡牌、信息框和弹窗的细节边框" },
+    { "file": "ui/ui_progress_fill.svg", "source": "kenney_ui_pack_adventure", "license": "CC0 1.0", "usage": "生命、能量或进度条蓝色填充" },
+    { "file": "ui/ui_progress_frame.svg", "source": "kenney_ui_pack_adventure", "license": "CC0 1.0", "usage": "生命、能量或进度条金属边框" },
+    { "file": "ui/ui_node_hex.svg", "source": "kenney_ui_pack_adventure", "license": "CC0 1.0", "usage": "地图节点、遗物槽或状态徽章底框" },
 
     { "file": "icons/icon_audio_off.png", "source": "kenney_game_icons", "license": "CC0 1.0", "usage": "静音状态图标" },
     { "file": "icons/icon_audio_on.png", "source": "kenney_game_icons", "license": "CC0 1.0", "usage": "声音开启状态图标" },
