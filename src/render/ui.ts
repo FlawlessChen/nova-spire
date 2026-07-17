@@ -1,5 +1,5 @@
 import { Container, Graphics, Sprite, Text } from 'pixi.js';
-import { ICONS, UI_TEXTURES, type IconKey } from '@/render/artAssets';
+import { ICONS, type IconKey } from '@/render/artAssets';
 
 // Shared PixiJS UI primitives + the deep-space design tokens ("Nova Spire"
 // theme: sci-fi starfield, mysterious tower). Every view pulls colors from UI
@@ -97,19 +97,17 @@ export function button(
   c.alpha = enabled ? 1 : 0.45;
 
   const base = opts.color ?? UI.button;
-  const g = new Graphics()
-    .roundRect(0, 0, w, h, 12)
-    .fill(base)
-    .stroke({ width: 1.5, color: UI.accent, alpha: 0.55 });
-  // top sheen line for a subtle sci-fi gradient feel
-  g.roundRect(2, 2, w - 4, h * 0.42, 10).fill({ color: 0xffffff, alpha: 0.06 });
-  c.addChild(g);
   const danger = base === UI.danger || base === 0x6e2634;
-  const skin = Sprite.from(danger ? UI_TEXTURES.dangerButton : UI_TEXTURES.button);
-  skin.width = w;
-  skin.height = h;
-  skin.alpha = 0.96;
-  c.addChild(skin);
+  const accent = danger ? UI.danger : UI.accent;
+  const g = new Graphics();
+  g.roundRect(3, 5, w, h, 11).fill({ color: 0x000000, alpha: 0.35 });
+  g.roundRect(0, 0, w, h, 11).fill(base).stroke({ width: 2, color: accent, alpha: 0.72 });
+  g.roundRect(4, 4, w - 8, h - 8, 8).fill({ color: 0xffffff, alpha: 0.025 }).stroke({ width: 1, color: 0xffffff, alpha: 0.08 });
+  g.rect(16, 0, Math.max(24, w * 0.22), 3).fill({ color: accent, alpha: 0.85 });
+  g.rect(w - 16 - Math.max(18, w * 0.12), h - 3, Math.max(18, w * 0.12), 3).fill({ color: accent, alpha: 0.45 });
+  g.poly([0, 12, 7, 5, 7, 19]).fill({ color: accent, alpha: 0.8 });
+  g.poly([w, h - 12, w - 7, h - 5, w - 7, h - 19]).fill({ color: accent, alpha: 0.55 });
+  c.addChild(g);
   if (opts.icon) {
     const icon = Sprite.from(ICONS[opts.icon]);
     const size = Math.min(28, h * 0.5);
@@ -143,47 +141,35 @@ export function button(
   return c;
 }
 
-/** Asset-backed metal surface with a procedural fallback underneath. */
+/** Scalable deep-space surface: layered frame, header sheen and corner marks. */
 export function panel(w: number, h: number, color: number = UI.panel, radius = 12): Container {
   const c = new Container();
-  const g = new Graphics()
-    .roundRect(0, 0, w, h, radius)
-    .fill(color)
-    .stroke({ width: 1, color: UI.panelBorder, alpha: 0.9 });
-  g.roundRect(1, 1, w - 2, Math.max(8, h * 0.3), radius - 1).fill({ color: 0xffffff, alpha: 0.035 });
+  const g = new Graphics();
+  g.roundRect(5, 7, w, h, radius).fill({ color: 0x000000, alpha: 0.38 });
+  g.roundRect(0, 0, w, h, radius).fill(color).stroke({ width: 2, color: UI.panelBorder, alpha: 0.95 });
+  g.roundRect(5, 5, w - 10, h - 10, Math.max(4, radius - 4)).stroke({ width: 1, color: UI.accent, alpha: 0.16 });
+  g.roundRect(4, 4, w - 8, Math.min(54, h * 0.22), Math.max(4, radius - 3)).fill({ color: 0xffffff, alpha: 0.035 });
+  g.rect(18, 0, Math.min(100, w * 0.28), 3).fill({ color: UI.accent, alpha: 0.55 });
+  g.rect(w - Math.min(72, w * 0.2) - 18, h - 3, Math.min(72, w * 0.2), 3).fill({ color: UI.accent2, alpha: 0.42 });
+  g.poly([0, 18, 9, 9, 9, 28]).fill({ color: UI.accent, alpha: 0.5 });
+  g.poly([w, h - 18, w - 9, h - 9, w - 9, h - 28]).fill({ color: UI.accent2, alpha: 0.45 });
   c.addChild(g);
-  const skin = Sprite.from(UI_TEXTURES.panel);
-  skin.width = w;
-  skin.height = h;
-  skin.alpha = 0.9;
-  c.addChild(skin);
-  const frame = Sprite.from(UI_TEXTURES.panelFrame);
-  frame.width = w;
-  frame.height = h;
-  frame.alpha = 0.65;
-  c.addChild(frame);
   return c;
 }
 
-/** Shared HP/progress bar using the selected Adventure UI frame. */
+/** Crisp vector HP/progress bar, safe at every layout scale. */
 export function progressBar(w: number, h: number, fraction: number, fillColor: number): Container {
   const c = new Container();
   const frac = Math.max(0, Math.min(1, fraction));
-  c.addChild(new Graphics().roundRect(0, 0, w, h, Math.min(6, h / 2)).fill(0x111827));
+  const g = new Graphics();
+  g.roundRect(0, 0, w, h, Math.min(7, h / 2)).fill(0x090d18).stroke({ width: 2, color: UI.panelBorder, alpha: 0.95 });
   if (frac > 0) {
-    const fill = Sprite.from(UI_TEXTURES.progressFill);
-    fill.x = 3;
-    fill.y = 3;
-    fill.width = Math.max(0, (w - 6) * frac);
-    fill.height = Math.max(1, h - 6);
-    fill.tint = fillColor;
-    c.addChild(fill);
+    const fw = Math.max(2, (w - 8) * frac);
+    g.roundRect(4, 4, fw, Math.max(2, h - 8), Math.min(4, h / 2)).fill(fillColor);
+    g.rect(8, 5, Math.max(0, fw - 8), Math.max(1, (h - 8) * 0.3)).fill({ color: 0xffffff, alpha: 0.18 });
   }
-  const frame = Sprite.from(UI_TEXTURES.progressFrame);
-  frame.width = w;
-  frame.height = h;
-  frame.alpha = 0.95;
-  c.addChild(frame);
+  g.rect(12, 0, Math.min(45, w * 0.2), 2).fill({ color: fillColor, alpha: 0.8 });
+  c.addChild(g);
   return c;
 }
 
