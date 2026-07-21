@@ -8,7 +8,7 @@ import { WEAK_MULTIPLIER, VULNERABLE_MULTIPLIER } from '@/data/statuses';
 import { playSound } from '@/render/sound';
 import { layout } from '@/render/layout';
 import { L, enemyName, relicName, statusShort } from '@/i18n';
-import { PX, pxText, pixelButton, pixelPanel, pixelBar, pixelPill, pixelOverlay } from '@/render/pixelUi';
+import { PX, pxText, pixelButton, pixelPanel, pixelBar, pixelPill, pixelOverlay, pixelGem } from '@/render/pixelUi';
 import { portrait } from '@/render/portraits';
 import { cardFace } from '@/render/cardArt';
 import { EFFECTS } from '@/render/artAssets';
@@ -380,23 +380,14 @@ export class CombatView {
     c.addChild(this.statusRow(p.statuses, 16, 104));
     this.root.addChild(c);
 
-    // energy orb: a pixel gem floating over the panel corner
-    const orb = new Container();
-    orb.x = layout.portrait ? 330 : 175;
-    orb.y = layout.portrait ? 545 : 452;
-    const og = new Graphics();
-    // outer dark block with gold border
-    og.rect(-34, -34, 68, 68).fill(0x000000).stroke({ width: 3, color: PX.energy, alpha: 1 });
-    // facet corners (cut to suggest an octagon)
-    og.rect(-34, -34, 5, 5).fill(PX.bg);
-    og.rect(29, -34, 5, 5).fill(PX.bg);
-    og.rect(-34, 29, 5, 5).fill(PX.bg);
-    og.rect(29, 29, 5, 5).fill(PX.bg);
-    // inner gold core
-    og.rect(-24, -24, 48, 48).fill({ color: PX.energy, alpha: 0.28 });
-    og.rect(-24, -24, 6, 6).fill({ color: PX.ink, alpha: 0.6 });
-    orb.addChild(og);
-    orb.addChild(this.label(`${p.energy}/${p.maxEnergy}`, 18, 0x2a1a05, 0, 0, 0.5));
+    // energy orb: a pixel diamond gem floating over the panel corner — matches
+    // the card cost gem so the two read as one motif.
+    const orb = pixelGem(56, PX.energy, PX.energy, layout.portrait ? 330 : 175, layout.portrait ? 545 : 452, {
+      fillAlpha: 0.28,
+      label: `${p.energy}/${p.maxEnergy}`,
+      labelColor: 0x2a1a05,
+      labelSize: 16,
+    });
     this.root.addChild(orb);
   }
 

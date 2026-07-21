@@ -3,11 +3,15 @@ import type { IconKey } from '@/render/artAssets';
 import { ICONS } from '@/render/artAssets';
 
 // Pixel / CRT design system — the single source of truth for the retro pixel
-// skin every view shares. Sharp vector blocks, Zpix CJK bitmap font, CRT
-// scanlines, PICO-8 / DB16-inspired palette. Replaces the smooth ui.ts
+// skin every view shares. Sharp vector blocks, clean CJK sans for readability,
+// CRT scanlines, PICO-8 / DB16-inspired palette. Replaces the smooth ui.ts
 // primitives for the pixel restyle.
 
-export const PIXEL_FONT = 'Zpix, "Courier New", monospace';
+// Clean CJK sans for in-game text — keeps Chinese readable (the old bitmap
+// Zpix face was too small on cards) while the block graphics keep the pixel
+// soul. Pixel/CRT headings (titles, emblems) are drawn, not typeset, so
+// they stay crisp & retro regardless of this choice.
+export const PIXEL_FONT = '"Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif';
 
 export const PX = {
   // base surfaces
@@ -123,6 +127,47 @@ export function scanlines(g: Graphics, x: number, y: number, w: number, h: numbe
   for (let sy = y; sy < y + h; sy += period) {
     g.rect(x, sy, w, 1).fill({ color: 0x000000, alpha });
   }
+}
+
+// ── diamond gem ──
+/** Clean pixel gem: a square rotated 45° (diamond) with a 1px inner highlight
+ *  and an optional centred label. Used for card cost + player energy orb so the
+ *  two read as the same motif. `size` is the diamond's edge length (pre-rotate). */
+export interface PixelGemOpts {
+  fillAlpha?: number;
+  label?: string;
+  labelColor?: number;
+  labelSize?: number;
+}
+export function pixelGem(
+  size: number,
+  fill: number,
+  border: number,
+  x: number,
+  y: number,
+  opts: PixelGemOpts = {},
+): Container {
+  const c = new Container();
+  c.x = x;
+  c.y = y;
+  const g = new Graphics();
+  // dark backing block (slightly larger, behind the diamond)
+  g.rect(-size / 2 - 2, -size / 2 - 2, size + 4, size + 4).fill(0x000000);
+  // rotated diamond: outline + filled centre
+  const dia = new Graphics();
+  dia.rect(-size / 2, -size / 2, size, size)
+    .fill({ color: fill, alpha: opts.fillAlpha ?? 0.3 })
+    .stroke({ width: 2, color: border, alpha: 1 });
+  dia.rotation = Math.PI / 4;
+  // 1px specular highlight (top-left of the rotated square)
+  dia.rect(-size / 2 + 3, -size / 2 + 3, 3, 3).fill({ color: PX.ink, alpha: 0.6 });
+  c.addChild(g);
+  c.addChild(dia);
+  if (opts.label !== undefined) {
+    const ls = opts.labelSize ?? Math.max(11, Math.round(size * 0.42));
+    c.addChild(pxText(opts.label, ls, opts.labelColor ?? 0x2a1a05, 0, 0, 0.5, 0.5));
+  }
+  return c;
 }
 
 // ── button ──
