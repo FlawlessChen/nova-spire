@@ -2,3 +2,7 @@ node_modules
 dist
 *.log
 .DS_Store
+
+# Full Zpix font is downloaded on demand by scripts/subset_font.py; only the
+# subsetted assets/fonts/zpix.ttf is committed.
+assets/fonts/zpix.full.ttf

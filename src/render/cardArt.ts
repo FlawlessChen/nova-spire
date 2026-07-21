@@ -2,42 +2,64 @@ import { Container, Graphics, Text } from 'pixi.js';
 import type { CardDefinition } from '@/types';
 import { resolveCard, isUpgraded } from '@/data/cardUpgrade';
 import { cardName, cardDesc, cardTypeLabel } from '@/i18n';
-import { FONT, UI, label } from '@/render/ui';
+import { PX, PIXEL_FONT, pxText, scanlines } from '@/render/pixelUi';
 
-// Shared card face renderer, used by the combat hand and the reward screen so
-// cards look identical everywhere. The frame is fully vector-based so it stays
-// crisp in the hand, reward grid and mobile layouts: layered rarity rails,
-// dedicated art viewport, name plate, cost core and description console.
+// Retro pixel / CRT card skin. Type-coloured blocks, pixel-stepped borders,
+// Zpix CJK bitmap font, and CRT scanlines. Pulls primitives + palette from
+// pixelUi so the card face is consistent with the rest of the pixel UI.
+// Function signature is identical to the previous version so combatView and
+// rewardView keep working unchanged.
 
-const TYPE_BAND: Record<CardDefinition['type'], number> = {
-  attack: 0x7a2440,
-  skill: 0x1d4d6e,
-  power: 0x4a2a7a,
+const TYPE_COLOR: Record<CardDefinition['type'], number> = {
+  attack: PX.red,
+  skill: PX.cyan,
+  power: PX.purple,
 };
 
-const RARITY_BORDER: Record<CardDefinition['rarity'], number> = {
-  common: 0x3a4a6e,
-  uncommon: 0x4dd8ff,
-  rare: 0xffd54d,
+const TYPE_INK: Record<CardDefinition['type'], number> = {
+  attack: 0xffa0a0,
+  skill: 0xbff0ff,
+  power: 0xd0b0ff,
 };
 
-// faint sigil in the art zone, per card type
-function sigil(g: Graphics, type: CardDefinition['type'], cx: number, cy: number, r: number): void {
+const RARITY_COLOR: Record<CardDefinition['rarity'], number> = {
+  common: PX.subtle,
+  uncommon: PX.cyan,
+  rare: PX.gold,
+};
+
+// Pixel-art sigil drawn from small blocks, one per card type. Each call paints
+// into the supplied Graphics so the sigil composites with the art viewport.
+function pixelSigil(g: Graphics, type: CardDefinition['type'], cx: number, cy: number, r: number): void {
+  const u = Math.max(2, Math.round(r / 7)); // grid unit
+  const ink = TYPE_INK[type];
+  const block = (gx: number, gy: number, gw: number, gh: number, alpha = 0.7): void => {
+    g.rect(cx + gx * u, cy + gy * u, gw * u, gh * u).fill({ color: ink, alpha });
+  };
   if (type === 'attack') {
-    // crossed blade: slash triangle pair
-    g.poly([cx - r, cy + r * 0.7, cx + r * 0.7, cy - r, cx + r, cy - r * 0.7, cx - r * 0.7, cy + r])
-      .fill({ color: 0xff8a9a, alpha: 0.14 });
-    g.poly([cx - r * 0.5, cy - r * 0.8, cx - r * 0.2, cy - r * 0.8, cx + r * 0.6, cy + r * 0.8, cx + r * 0.3, cy + r * 0.8])
-      .fill({ color: 0xff8a9a, alpha: 0.1 });
+    // pixel sword: blade + crossguard + pommel
+    block(-0.5, -3, 1, 4);        // blade
+    block(-0.5, -3.4, 1, 0.6);    // tip
+    block(-2, 1, 4, 1);           // crossguard
+    block(-0.5, 1.6, 1, 1.2);     // grip
+    block(-1, 2.6, 2, 0.7);       // pommel
   } else if (type === 'skill') {
-    // shield arc
-    g.poly([cx, cy - r, cx + r * 0.85, cy - r * 0.45, cx + r * 0.85, cy + r * 0.3, cx, cy + r, cx - r * 0.85, cy + r * 0.3, cx - r * 0.85, cy - r * 0.45])
-      .fill({ color: 0x7fd4ff, alpha: 0.13 });
-    g.circle(cx, cy, r * 0.35).fill({ color: 0x7fd4ff, alpha: 0.1 });
+    // pixel shield: broad top, tapering base, cross detail
+    block(-2, -2.6, 4, 1);        // top edge
+    block(-2, -1.6, 4, 2);        // body
+    block(-1.5, 0.4, 3, 1);       // taper
+    block(-1, 1.4, 2, 1);         // point
+    g.rect(cx - u * 0.4, cy - u * 1.6, u * 0.8, u * 2.4).fill({ color: ink, alpha: 0.95 });
+    g.rect(cx - u * 1.4, cy - u * 0.4, u * 2.8, u * 0.8).fill({ color: ink, alpha: 0.95 });
   } else {
-    // power star
-    g.poly([cx, cy - r, cx + r * 0.22, cy - r * 0.22, cx + r, cy, cx + r * 0.22, cy + r * 0.22, cx, cy + r, cx - r * 0.22, cy + r * 0.22, cx - r, cy, cx - r * 0.22, cy - r * 0.22])
-      .fill({ color: 0xc9a6ff, alpha: 0.15 });
+    // pixel star: cross + diagonal accents
+    block(-0.5, -3, 1, 6);        // vertical
+    block(-3, -0.5, 6, 1);        // horizontal
+    block(-1, -1, 2, 2, 0.95);    // bright core
+    block(-2, -2, 0.7, 0.7);      // diagonal nubs
+    block(1.3, -2, 0.7, 0.7);
+    block(-2, 1.3, 0.7, 0.7);
+    block(1.3, 1.3, 0.7, 0.7);
   }
 }
 
@@ -49,99 +71,153 @@ export function cardFace(definitionId: string, w: number, h: number, opts: CardF
   const def = resolveCard(definitionId);
   const upgraded = isUpgraded(definitionId);
   const c = new Container();
-  const bandH = Math.round(h * 0.17);
-  const radius = Math.max(9, Math.round(w * 0.08));
+  const bandH = Math.round(h * 0.16);
+  const tColor = TYPE_COLOR[def.type];
+  const borderColor = opts.selected ? PX.gold : upgraded ? PX.green : RARITY_COLOR[def.rarity];
 
-  // frame — upgraded cards get a green-gold border
-  const borderColor = opts.selected ? UI.gold : upgraded ? 0x8fe36a : RARITY_BORDER[def.rarity];
+  // ── frame: sharp pixel border, no rounded corners ──
   const frame = new Graphics();
-  frame.roundRect(4, 6, w, h, radius).fill({ color: 0x000000, alpha: 0.45 });
-  frame.roundRect(0, 0, w, h, radius).fill(0x0b1020).stroke({ width: opts.selected || upgraded ? 4 : 3, color: borderColor, alpha: 0.95 });
-  frame.roundRect(5, 5, w - 10, h - 10, Math.max(5, radius - 4)).stroke({ width: 1, color: 0xffffff, alpha: 0.13 });
-  frame.rect(14, 0, Math.max(24, w * 0.28), 3).fill({ color: borderColor, alpha: 0.95 });
-  frame.rect(w - Math.max(20, w * 0.2) - 14, h - 3, Math.max(20, w * 0.2), 3).fill({ color: borderColor, alpha: 0.55 });
-  frame.poly([0, h * 0.24, 7, h * 0.24 - 7, 7, h * 0.24 + 12]).fill({ color: borderColor, alpha: 0.8 });
-  frame.poly([w, h * 0.7, w - 7, h * 0.7 - 12, w - 7, h * 0.7 + 7]).fill({ color: borderColor, alpha: 0.55 });
+  // drop shadow (offset block)
+  frame.rect(3, 4, w, h).fill({ color: 0x000000, alpha: 0.5 });
+  // body
+  frame.rect(0, 0, w, h).fill(PX.bg);
+  // outer border (double-line for pixel feel)
+  frame.rect(0, 0, w, h).stroke({ width: 3, color: borderColor, alpha: 1 });
+  frame.rect(3, 3, w - 6, h - 6).stroke({ width: 1, color: borderColor, alpha: 0.4 });
+  // corner rivets — 2x2 blocks accent the pixel aesthetic
+  frame.rect(2, 2, 2, 2).fill(borderColor);
+  frame.rect(w - 4, 2, 2, 2).fill(borderColor);
+  frame.rect(2, h - 4, 2, 2).fill(borderColor);
+  frame.rect(w - 4, h - 4, 2, 2).fill(borderColor);
+  // type indicator strip on the top edge
+  frame.rect(6, 0, Math.max(20, w * 0.24), 2).fill(tColor);
+  frame.rect(w - Math.max(20, w * 0.24) - 6, h - 2, Math.max(20, w * 0.24), 2).fill({ color: tColor, alpha: 0.6 });
   c.addChild(frame);
 
-  // type band behind the name (flat rect under the rounded top)
+  // ── type band: solid blocky header in the type colour ──
   const band = new Graphics();
-  band.roundRect(7, 7, w - 14, bandH + 8, Math.max(5, radius - 4)).fill({ color: TYPE_BAND[def.type], alpha: 0.92 });
-  band.rect(7, bandH - 2, w - 14, 12).fill({ color: TYPE_BAND[def.type], alpha: 0.92 });
-  band.rect(42, bandH + 4, w - 54, 2).fill({ color: borderColor, alpha: 0.45 });
+  band.rect(4, 4, w - 8, bandH).fill({ color: tColor, alpha: 0.92 });
+  band.rect(4, 4 + bandH, w - 8, 2).fill({ color: 0x000000, alpha: 0.5 });
+  // a 1px highlight along the top of the band
+  band.rect(4, 4, w - 8, 1).fill({ color: PX.ink, alpha: 0.25 });
   c.addChild(band);
 
-  // art viewport: a distinct framed area instead of an empty middle section.
+  // ── art viewport: recessed blocky frame with sigil + pixel stars ──
   const art = new Graphics();
-  const artX = 10;
-  const artY = bandH + 14;
-  const artW = w - 20;
-  const artH = h * 0.36;
-  art.roundRect(artX, artY, artW, artH, 7).fill({ color: TYPE_BAND[def.type], alpha: 0.24 }).stroke({ width: 1.5, color: borderColor, alpha: 0.6 });
-  art.roundRect(artX + 4, artY + 4, artW - 8, artH - 8, 5).stroke({ width: 1, color: 0xffffff, alpha: 0.08 });
+  const artX = 5;
+  const artY = 4 + bandH + 4;
+  const artW = w - 10;
+  const artH = Math.round(h * 0.36);
+  art.rect(artX, artY, artW, artH).fill(PX.bgInner).stroke({ width: 1, color: borderColor, alpha: 0.7 });
+  art.rect(artX + 2, artY + 2, artW - 4, artH - 4).stroke({ width: 1, color: tColor, alpha: 0.3 });
+  // deterministic pixel star field from the card id
   let seed = 0;
   for (const ch of definitionId) seed = (seed * 31 + ch.charCodeAt(0)) >>> 0;
-  for (let i = 0; i < 7; i++) {
+  for (let i = 0; i < 9; i++) {
     seed = (seed * 1664525 + 1013904223) >>> 0;
-    const sx = artX + 8 + (seed % Math.max(1, Math.floor(artW - 16)));
+    const sx = artX + 3 + (seed % Math.max(1, artW - 6));
     seed = (seed * 1664525 + 1013904223) >>> 0;
-    const sy = artY + 8 + (seed % Math.max(1, Math.floor(artH - 16)));
-    art.circle(sx, sy, i % 3 === 0 ? 1.4 : 0.8).fill({ color: 0xffffff, alpha: 0.18 });
+    const sy = artY + 3 + (seed % Math.max(1, artH - 6));
+    const s = i % 3 === 0 ? 2 : 1;
+    art.rect(sx, sy, s, s).fill({ color: PX.ink, alpha: 0.35 });
   }
-  sigil(art, def.type, w / 2, h * 0.42, w * 0.28);
+  pixelSigil(art, def.type, w / 2, artY + artH / 2, Math.min(artW, artH) * 0.34);
+  scanlines(art, artX, artY, artW, artH, 3, 0.14);
   c.addChild(art);
 
-  // cost gem (over the band's left edge)
+  // ── cost gem: faceted pixel block (octagon-ish) ──
   const gem = new Graphics();
-  gem.circle(21, 21, 18).fill(0x080c18).stroke({ width: 3, color: UI.gold, alpha: 0.95 });
-  gem.circle(21, 21, 13).fill({ color: UI.accent2, alpha: 0.22 }).stroke({ width: 1, color: 0xffffff, alpha: 0.18 });
+  const gx = 16;
+  const gy = 4 + bandH / 2;
+  const gr = Math.round(bandH * 0.42);
+  // outer block
+  gem.rect(gx - gr, gy - gr, gr * 2, gr * 2).fill(0x000000).stroke({ width: 2, color: PX.gold, alpha: 1 });
+  // facet: inner diagonal cuts (corner squares in bg colour)
+  gem.rect(gx - gr, gy - gr, 3, 3).fill(PX.bg);
+  gem.rect(gx + gr - 3, gy - gr, 3, 3).fill(PX.bg);
+  gem.rect(gx - gr, gy + gr - 3, 3, 3).fill(PX.bg);
+  gem.rect(gx + gr - 3, gy + gr - 3, 3, 3).fill(PX.bg);
+  // inner core
+  gem.rect(gx - gr + 4, gy - gr + 4, gr * 2 - 8, gr * 2 - 8).fill({ color: PX.gold, alpha: 0.22 });
+  // specular highlight
+  gem.rect(gx - gr + 4, gy - gr + 4, 3, 3).fill({ color: PX.ink, alpha: 0.7 });
   c.addChild(gem);
-  c.addChild(label(`${def.cost}`, 18, UI.gold, 21, 21, 0.5));
+  c.addChild(pxText(`${def.cost}`, Math.max(11, Math.round(bandH * 0.5)), 0x2a1a05, gx, gy, 0.5, 0.5));
 
-  // name centred on the band (leave room for the gem on the left)
-  const name = label(cardName(definitionId), Math.max(12, Math.round(w * 0.098)), UI.text, w / 2 + 10, 2 + (bandH + 8) / 2, 0.5);
-  c.addChild(name);
+  // ── name on the band (pixel font, centred, leaving room for the gem) ──
+  const nameSize = Math.max(11, Math.round(bandH * 0.5));
+  c.addChild(pxText(cardName(definitionId), nameSize, PX.ink, w / 2 + 8, 4 + bandH / 2, 0.5, 0.5));
 
-  // description console beneath the art viewport.
-  const consoleY = h * 0.57;
-  c.addChild(new Graphics().roundRect(10, consoleY, w - 20, h - consoleY - 32, 7).fill({ color: 0x11182b, alpha: 0.96 }).stroke({ width: 1, color: borderColor, alpha: 0.35 }));
-  c.addChild(new Graphics().rect(18, consoleY, w - 36, 2).fill({ color: borderColor, alpha: 0.5 }));
+  // upgraded marker: a small `+` chip at the bottom-right corner (kept clear of
+  // the rarity pips which live at the top-right)
+  if (upgraded) {
+    const up = new Container();
+    up.x = w - 20;
+    up.y = h - 22;
+    const upG = new Graphics();
+    upG.rect(0, 0, 12, 12).fill(PX.green).stroke({ width: 1, color: 0x000000 });
+    up.addChild(upG);
+    up.addChild(pxText('+', 10, 0x0a1a05, 6, 6, 0.5, 0.5));
+    c.addChild(up);
+  }
 
-  // description
+  // ── description console: recessed blocky panel ──
+  const consoleY = artY + artH + 4;
+  const consoleH = h - consoleY - 28;
+  const cons = new Graphics();
+  cons.rect(5, consoleY, w - 10, consoleH).fill(PX.bgInner).stroke({ width: 1, color: borderColor, alpha: 0.5 });
+  cons.rect(5, consoleY, w - 10, 1).fill({ color: tColor, alpha: 0.4 });
+  c.addChild(cons);
+  scanlines(cons, 5, consoleY, w - 10, consoleH, 3, 0.08);
+
+  const descSize = Math.max(10, Math.round(w * 0.072));
   const desc = new Text({
     text: cardDesc(definitionId),
     style: {
-      fill: UI.text,
-      fontSize: Math.max(12, Math.round(w * 0.085)),
-      fontFamily: FONT,
+      fill: PX.text,
+      fontSize: descSize,
+      fontFamily: PIXEL_FONT,
       align: 'center',
       wordWrap: true,
-      wordWrapWidth: w - 22,
-      lineHeight: Math.max(16, Math.round(w * 0.115)),
+      wordWrapWidth: w - 18,
+      lineHeight: descSize + 6,
     },
   });
-  desc.anchor.set(0.5, 0);
+  desc.anchor.set(0.5, 0.5);
   desc.x = w / 2;
-  desc.y = consoleY + 12;
+  desc.y = consoleY + consoleH / 2;
   c.addChild(desc);
 
-  // type chip at the bottom
-  const chipLabel = label(cardTypeLabel(def.type), 11, UI.subtle, 0, 0, 0);
-  const chipW = chipLabel.width + 14;
+  // ── type chip at the bottom: sharp block with type colour ──
+  const chipLabel = pxText(cardTypeLabel(def.type), Math.max(9, Math.round(w * 0.062)), PX.ink, 0, 0, 0, 0);
+  const chipW = chipLabel.width + 12;
   const chip = new Container();
-  chip.x = w / 2 - chipW / 2;
-  chip.y = h - 25;
-  chip.addChild(new Graphics().roundRect(0, 0, chipW, 18, 7).fill({ color: TYPE_BAND[def.type], alpha: 0.7 }).stroke({ width: 1, color: borderColor, alpha: 0.55 }));
-  chipLabel.x = 7;
-  chipLabel.y = 2;
+  chip.x = Math.round(w / 2 - chipW / 2);
+  chip.y = h - 22;
+  const chipG = new Graphics();
+  chipG.rect(0, 0, chipW, 16).fill({ color: tColor, alpha: 0.85 }).stroke({ width: 1, color: 0x000000, alpha: 0.6 });
+  chip.addChild(chipG);
+  chipLabel.x = 6;
+  chipLabel.y = 8;
+  chipLabel.anchor.set(0, 0.5);
   chip.addChild(chipLabel);
   c.addChild(chip);
 
-  // rarity indicator — one/two/three luminous pips.
+  // ── rarity pips: pixel stars (plus-shaped) in the top-right ──
   const pips = def.rarity === 'rare' ? 3 : def.rarity === 'uncommon' ? 2 : 1;
   const rarity = new Graphics();
-  for (let i = 0; i < pips; i++) rarity.circle(w - 13 - i * 7, 13, 2.2).fill({ color: borderColor, alpha: 0.95 });
+  for (let i = 0; i < pips; i++) {
+    const px = w - 8 - i * 8;
+    const py = 8;
+    rarity.rect(px - 1, py - 3, 2, 6).fill({ color: borderColor, alpha: 0.95 });
+    rarity.rect(px - 3, py - 1, 6, 2).fill({ color: borderColor, alpha: 0.95 });
+  }
   c.addChild(rarity);
+
+  // ── global CRT scanlines over the whole card face ──
+  const crt = new Graphics();
+  scanlines(crt, 0, 0, w, h, 4, 0.06);
+  c.addChild(crt);
 
   return c;
 }

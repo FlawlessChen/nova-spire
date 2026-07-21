@@ -1,7 +1,7 @@
-import { Container, Graphics } from 'pixi.js';
+import { Container } from 'pixi.js';
 import { layout } from '@/render/layout';
 import { L, relicName, relicDesc } from '@/i18n';
-import { label, button, UI } from '@/render/ui';
+import { PX, pxLabel, pixelButton, pixelOverlay } from '@/render/pixelUi';
 import { cardFace } from '@/render/cardArt';
 
 // RewardView: after a battle, choose one of three cards to add to the deck, or
@@ -19,16 +19,16 @@ export class RewardView {
 
   render(): void {
     this.root.removeChildren();
-    this.root.addChild(new Graphics().rect(0, 0, layout.W, layout.H).fill(UI.overlay));
-    this.root.addChild(label(L.ui.rewardTitle, layout.portrait ? 26 : 32, UI.gold, layout.W / 2, 80, 0.5));
+    this.root.addChild(pixelOverlay(layout.W, layout.H, 0.95));
+    this.root.addChild(pxLabel(L.ui.rewardTitle, layout.portrait ? 24 : 30, PX.gold, layout.W / 2, 80, 0.5));
 
     // elite relic drop announcement
     if (this.droppedRelic) {
       this.root.addChild(
-        label(
+        pxLabel(
           L.ui.relicDrop(relicName(this.droppedRelic), relicDesc(this.droppedRelic)),
-          layout.portrait ? 14 : 18,
-          UI.good,
+          layout.portrait ? 13 : 16,
+          PX.green,
           layout.W / 2,
           130,
           0.5,
@@ -51,7 +51,7 @@ export class RewardView {
     }
 
     this.root.addChild(
-      button(L.ui.skip, layout.W / 2 - 90, y + cardH + 50, () => this.onChoose(null), { width: 180, color: 0x2a3352 }),
+      pixelButton(L.ui.skip, layout.W / 2 - 90, y + cardH + 50, () => this.onChoose(null), { width: 180, height: 50, variant: 'ghost' }),
     );
   }
 

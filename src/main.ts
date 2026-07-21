@@ -2,7 +2,7 @@ import { Application, Assets, Container } from 'pixi.js';
 import { App } from '@/render/app';
 import { layout, updateLayout } from '@/render/layout';
 import { Starfield } from '@/render/starfield';
-import { UI } from '@/render/ui';
+import { PX } from '@/render/pixelUi';
 import { ALL_ART_ASSET_URLS } from '@/render/artAssets';
 
 // App entry: boots PixiJS, mounts the persistent starfield backdrop and the
@@ -14,7 +14,7 @@ import { ALL_ART_ASSET_URLS } from '@/render/artAssets';
 async function main(): Promise<void> {
   const app = new Application();
   await app.init({
-    background: UI.bgDeep,
+    background: PX.bgDeep,
     resizeTo: window,
     antialias: true,
     autoDensity: true,
@@ -25,6 +25,19 @@ async function main(): Promise<void> {
   // not initiate URL loading. Preload every selected art texture before any
   // view creates sprites so asset-backed UI/FX are visible on the first frame.
   await Assets.load(ALL_ART_ASSET_URLS);
+
+  // Register the Zpix pixel font (CJK-capable) before any view renders text,
+  // so the card faces and title screen render in the retro pixel style. Wrapped
+  // in try/catch so a font-load failure degrades gracefully to the monospace
+  // fallback instead of crashing the whole app.
+  try {
+    const zpixUrl = new URL('../assets/fonts/zpix.ttf', import.meta.url).href;
+    const zpixFace = new FontFace('Zpix', `url(${zpixUrl})`);
+    await zpixFace.load();
+    document.fonts.add(zpixFace);
+  } catch (err) {
+    console.warn('Zpix pixel font failed to load; falling back to monospace', err);
+  }
 
   const mount = document.getElementById('app');
   if (!mount) throw new Error('#app mount not found');

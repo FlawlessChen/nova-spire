@@ -2,17 +2,18 @@ import { Container, Graphics } from 'pixi.js';
 import { PATHS, PATH_IDS } from '@/data/paths';
 import { layout } from '@/render/layout';
 import { L, pathName, pathTagline, pathDesc, relicName } from '@/i18n';
-import { label, wrappedText, button, panel, UI } from '@/render/ui';
+import { PX, pxLabel, pxWrapped, pixelButton, pixelPanel, pixelOverlay } from '@/render/pixelUi';
 
-// PathSelectView: the run opens here (Hextech-Prism style). Three hero paths,
-// each a build identity; picking one starts the run with that deck + signature
-// relic + reward bias. Reads path DATA only; calls back with the chosen id.
+// PathSelectView: the run opens here. Three hero paths, each a build identity;
+// picking one starts the run with that deck + signature relic + reward bias.
+// Reads path DATA only; calls back with the chosen id.
 
-// Accent color per path, echoing its theme.
+// Accent color per path, echoing its theme — mapped onto the pixel palette so
+// the path colour recurs across the run.
 const PATH_ACCENT: Record<string, number> = {
-  toxicologist: 0x52e09a, // toxin green
-  berserker: 0xff7a5c,    // rage ember
-  bulwark: 0x4dd8ff,      // bastion cyan
+  toxicologist: PX.green,  // toxin
+  berserker: PX.red,       // rage
+  bulwark: PX.cyan,        // bastion
 };
 
 export class PathSelectView {
@@ -22,10 +23,10 @@ export class PathSelectView {
 
   render(): void {
     this.root.removeChildren();
-    this.root.addChild(new Graphics().rect(0, 0, layout.W, layout.H).fill({ color: UI.overlay, alpha: 0.6 }));
+    this.root.addChild(pixelOverlay(layout.W, layout.H, 0.6));
 
-    this.root.addChild(label(L.ui.pathSelectTitle, layout.portrait ? 32 : 40, UI.gold, layout.W / 2, layout.portrait ? 60 : 70, 0.5));
-    this.root.addChild(label(L.ui.pathSelectHint, layout.portrait ? 15 : 18, UI.subtle, layout.W / 2, layout.portrait ? 104 : 122, 0.5));
+    this.root.addChild(pxLabel(L.ui.pathSelectTitle, layout.portrait ? 30 : 38, PX.gold, layout.W / 2, layout.portrait ? 60 : 70, 0.5));
+    this.root.addChild(pxLabel(L.ui.pathSelectHint, layout.portrait ? 14 : 16, PX.subtle, layout.W / 2, layout.portrait ? 104 : 122, 0.5));
 
     // portrait → vertical stack of wide cards; landscape → three columns
     if (layout.portrait) {
@@ -54,39 +55,38 @@ export class PathSelectView {
 
   private drawPathCard(id: string, x: number, y: number, w: number, h: number): Container {
     const path = PATHS[id];
-    const accent = PATH_ACCENT[id] ?? UI.accent;
+    const accent = PATH_ACCENT[id] ?? PX.cyan;
     const c = new Container();
     c.x = x;
     c.y = y;
 
-    c.addChild(panel(w, h, UI.panel, 16));
-    c.addChild(new Graphics().roundRect(0, 0, w, h, 16).stroke({ width: 2, color: accent, alpha: 0.8 }));
-    // accent header band
-    c.addChild(new Graphics().roundRect(2, 2, w - 4, 64, 14).fill({ color: accent, alpha: 0.14 }));
+    c.addChild(pixelPanel(w, h, { color: PX.panel, border: accent }));
+    // accent header band (sharp rect)
+    c.addChild(new Graphics().rect(2, 2, w - 4, 64).fill({ color: accent, alpha: 0.16 }));
 
     let cy = 22;
-    c.addChild(label(pathName(id), 26, UI.text, w / 2, cy, 0.5));
+    c.addChild(pxLabel(pathName(id), 24, PX.text, w / 2, cy, 0.5));
     cy += 42;
-    c.addChild(label(pathTagline(id), 15, accent, w / 2, cy, 0.5));
+    c.addChild(pxLabel(pathTagline(id), 14, accent, w / 2, cy, 0.5));
     cy += 34;
 
-    c.addChild(wrappedText(pathDesc(id), 14, UI.subtle, w - 40, w / 2, cy, 'center'));
+    c.addChild(pxWrapped(pathDesc(id), 13, PX.subtle, w - 40, w / 2, cy, 'center'));
     cy = layout.portrait ? h - 120 : h - 150;
 
     // starting relic line
     const relicId = path.relics[0];
     if (relicId) {
-      c.addChild(new Graphics().rect(20, cy, w - 40, 1).fill({ color: 0xffffff, alpha: 0.12 }));
+      c.addChild(new Graphics().rect(20, cy, w - 40, 1).fill({ color: PX.ink, alpha: 0.12 }));
       cy += 12;
-      c.addChild(label(`${L.ui.pathStartRelic}：${relicName(relicId)}`, 14, UI.gold, w / 2, cy, 0.5));
+      c.addChild(pxLabel(`${L.ui.pathStartRelic}：${relicName(relicId)}`, 13, PX.gold, w / 2, cy, 0.5));
       cy += 26;
     }
-    c.addChild(label(`${L.ui.pathStartDeck}：${path.deck.length} 张`, 13, UI.subtle, w / 2, cy, 0.5));
+    c.addChild(pxLabel(`${L.ui.pathStartDeck}：${path.deck.length} 张`, 12, PX.subtle, w / 2, cy, 0.5));
 
     // choose button pinned to the bottom
     const btnW = w - 60;
     c.addChild(
-      button(L.ui.startRun, (w - btnW) / 2, h - 62, () => this.onChoose(id), { width: btnW, height: 46, color: UI.button }),
+      pixelButton(L.ui.startRun, (w - btnW) / 2, h - 62, () => this.onChoose(id), { width: btnW, height: 46, fontSize: 16, variant: 'secondary' }),
     );
 
     // whole card is also tappable

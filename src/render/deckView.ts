@@ -1,7 +1,7 @@
-import { Container, Graphics } from 'pixi.js';
+import { Container } from 'pixi.js';
 import { layout } from '@/render/layout';
 import { L, cardName } from '@/i18n';
-import { label, button, UI } from '@/render/ui';
+import { PX, pxLabel, pixelButton, pixelOverlay } from '@/render/pixelUi';
 import { cardFace } from '@/render/cardArt';
 
 // DeckView: an overlay listing a pile of cards (deck / draw / discard) as a
@@ -19,13 +19,13 @@ export class DeckView {
 
   render(): void {
     this.root.removeChildren();
-    this.root.addChild(new Graphics().rect(0, 0, layout.W, layout.H).fill({ color: UI.overlay, alpha: 0.94 }));
-    this.root.addChild(label(this.title, layout.portrait ? 26 : 32, UI.gold, layout.W / 2, 30, 0.5));
+    this.root.addChild(pixelOverlay(layout.W, layout.H, 0.94));
+    this.root.addChild(pxLabel(this.title, layout.portrait ? 24 : 30, PX.gold, layout.W / 2, 30, 0.5));
 
     const ids = this.cardIds.slice().sort((a, b) => cardName(a).localeCompare(cardName(b), 'zh'));
 
     if (ids.length === 0) {
-      this.root.addChild(label(L.ui.emptyPile, 20, UI.subtle, layout.W / 2, layout.H / 2, 0.5));
+      this.root.addChild(pxLabel(L.ui.emptyPile, 18, PX.subtle, layout.W / 2, layout.H / 2, 0.5));
     } else {
       // grid of small card faces
       const cardW = layout.portrait ? 104 : 120;
@@ -46,7 +46,7 @@ export class DeckView {
     }
 
     this.root.addChild(
-      button(L.ui.close, layout.W / 2 - 90, layout.H - 72, () => this.onClose(), { width: 180, height: 50 }),
+      pixelButton(L.ui.close, layout.W / 2 - 90, layout.H - 72, () => this.onClose(), { width: 180, height: 50, variant: 'secondary' }),
     );
   }
 }

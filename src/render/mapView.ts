@@ -3,19 +3,20 @@ import type { RunManager } from '@/game/runManager';
 import type { MapNode, NodeType } from '@/types/run';
 import { layout } from '@/render/layout';
 import { L, relicName } from '@/i18n';
-import { label, button, UI } from '@/render/ui';
+import { PX, pxLabel, pixelButton } from '@/render/pixelUi';
 
-// MapView: the star chart. Renders the layered-DAG map as a constellation —
-// layer 0 at the BOTTOM, the boss at the TOP, so the run reads as a climb up
-// the Spire. Reads RunManager state only; a click calls back to the App.
+// MapView: the star chart (retro pixel skin). Renders the layered-DAG map as a
+// constellation of blocky square nodes — layer 0 at the BOTTOM, the boss at the
+// TOP, so the run reads as a climb up the Spire. Reads RunManager state only;
+// a click calls back to the App.
 
 const NODE_META: Record<NodeType, { color: number; glyph: string }> = {
-  battle: { color: 0x8a3f5c, glyph: '⚔' },
-  elite: { color: 0xd8862f, glyph: '☠' },
-  campfire: { color: 0x2a8a63, glyph: '🔥' },
-  shop: { color: 0x3f6bb5, glyph: '🛒' },
-  event: { color: 0x6d4aa8, glyph: '?' },
-  boss: { color: 0x9d6bff, glyph: '♛' },
+  battle: { color: PX.red, glyph: '战' },
+  elite: { color: PX.orange, glyph: '精' },
+  campfire: { color: PX.green, glyph: '火' },
+  shop: { color: PX.cyan, glyph: '店' },
+  event: { color: PX.purple, glyph: '?' },
+  boss: { color: PX.gold, glyph: '王' },
 };
 
 function nodeLabel(type: NodeType): string {
@@ -35,7 +36,7 @@ function nodeLabel(type: NodeType): string {
   }
 }
 
-const NODE_R = 26;
+const NODE_R = 24;
 
 export class MapView {
   readonly root = new Container();
@@ -52,20 +53,20 @@ export class MapView {
     const map = state.map;
 
     // header
-    this.root.addChild(label(L.ui.mapTitle, 30, UI.text, layout.W / 2, 20, 0.5));
-    this.root.addChild(label(L.ui.hpLine(state.playerHp, state.playerMaxHp), 20, UI.good, 40, 28));
-    this.root.addChild(label(L.ui.goldLine(state.gold), 20, UI.gold, 40, 56));
-    this.root.addChild(label(L.ui.deckLine(state.deck.length), 18, UI.subtle, 40, 84));
+    this.root.addChild(pxLabel(L.ui.mapTitle, 26, PX.text, layout.W / 2, 20, 0.5));
+    this.root.addChild(pxLabel(L.ui.hpLine(state.playerHp, state.playerMaxHp), 18, PX.green, 40, 28));
+    this.root.addChild(pxLabel(L.ui.goldLine(state.gold), 18, PX.gold, 40, 56));
+    this.root.addChild(pxLabel(L.ui.deckLine(state.deck.length), 16, PX.subtle, 40, 84));
     if (state.relics.length > 0) {
       const names = state.relics.map((id) => relicName(id)).join('、');
-      this.root.addChild(label(L.ui.relicsLine(names), 15, UI.gold, 40, 112));
+      this.root.addChild(pxLabel(L.ui.relicsLine(names), 14, PX.gold, 40, 112));
     }
 
     // top-right: view deck + menu
     if (this.actions) {
       const bw = 110;
-      this.root.addChild(button(L.ui.viewDeck, layout.W - bw * 2 - 26, 20, this.actions.onViewDeck, { width: bw, height: 40, fontSize: 16, color: 0x2a3352, icon: 'star' }));
-      this.root.addChild(button(L.ui.menu, layout.W - bw - 14, 20, this.actions.onMenu, { width: bw, height: 40, fontSize: 16, color: 0x2a3352, icon: 'settings' }));
+      this.root.addChild(pixelButton(L.ui.viewDeck, layout.W - bw * 2 - 26, 20, this.actions.onViewDeck, { width: bw, height: 40, fontSize: 14, variant: 'ghost', icon: 'star' }));
+      this.root.addChild(pixelButton(L.ui.menu, layout.W - bw - 14, 20, this.actions.onMenu, { width: bw, height: 40, fontSize: 14, variant: 'ghost', icon: 'settings' }));
     }
 
     const reachable = new Set(this.mgr.availableNodes().map((n) => n.id));
@@ -97,7 +98,7 @@ export class MapView {
           .lineTo(nodeX(next), layerY(next.layer))
           .stroke({
             width: onPath ? 4 : 2,
-            color: onPath ? UI.gold : 0x2e3a5c,
+            color: onPath ? PX.gold : PX.panelBorder,
             alpha: onPath ? 0.9 : 0.7,
           });
       }
@@ -114,7 +115,7 @@ export class MapView {
     // if the run is over, offer a restart
     if (this.mgr.isOver()) {
       this.root.addChild(
-        button(state.phase === 'won' ? L.ui.runWonNew : L.ui.runLostNew, layout.W / 2 - 110, layout.H - 74, () => this.onEnterNode('__restart__'), { width: 220, color: state.phase === 'won' ? UI.buttonAlt : UI.button, icon: state.phase === 'won' ? 'trophy' : 'back' }),
+        pixelButton(state.phase === 'won' ? L.ui.runWonNew : L.ui.runLostNew, layout.W / 2 - 110, layout.H - 74, () => this.onEnterNode('__restart__'), { width: 220, height: 50, variant: state.phase === 'won' ? 'primary' : 'danger', icon: state.phase === 'won' ? 'trophy' : 'back' }),
       );
     }
   }
@@ -132,35 +133,29 @@ export class MapView {
     c.x = x;
     c.y = y;
 
-    c.addChild(new Graphics().poly([
-      0, -NODE_R - 7,
-      NODE_R + 4, -NODE_R * 0.5,
-      NODE_R + 4, NODE_R * 0.5,
-      0, NODE_R + 7,
-      -NODE_R - 4, NODE_R * 0.5,
-      -NODE_R - 4, -NODE_R * 0.5,
-    ]).fill({ color: meta.color, alpha: 0.18 }).stroke({ width: 2, color: meta.color, alpha: 0.7 }));
+    // outer aura square
+    c.addChild(new Graphics().rect(-NODE_R - 10, -NODE_R - 10, (NODE_R + 10) * 2, (NODE_R + 10) * 2).fill({ color: meta.color, alpha: 0.14 }).stroke({ width: 2, color: meta.color, alpha: 0.5 }));
 
     // halo for interactable/current nodes
     if (reachable && !this.mgr.isOver()) {
-      c.addChild(new Graphics().circle(0, 0, NODE_R + 12).fill({ color: UI.accent, alpha: 0.08 }));
-      c.addChild(new Graphics().circle(0, 0, NODE_R + 6).stroke({ width: 2, color: UI.accent, alpha: 0.6 }));
+      c.addChild(new Graphics().rect(-NODE_R - 14, -NODE_R - 14, (NODE_R + 14) * 2, (NODE_R + 14) * 2).fill({ color: PX.cyan, alpha: 0.08 }));
+      c.addChild(new Graphics().rect(-NODE_R - 8, -NODE_R - 8, (NODE_R + 8) * 2, (NODE_R + 8) * 2).stroke({ width: 2, color: PX.cyan, alpha: 0.6 }));
     }
 
     const g = new Graphics()
-      .circle(0, 0, NODE_R)
+      .rect(-NODE_R, -NODE_R, NODE_R * 2, NODE_R * 2)
       .fill({ color: meta.color, alpha: 0.95 });
-    if (current) g.stroke({ width: 4, color: 0xffffff });
-    else if (reachable) g.stroke({ width: 3, color: UI.accent });
+    if (current) g.stroke({ width: 4, color: PX.ink });
+    else if (reachable) g.stroke({ width: 3, color: PX.cyan });
     else g.stroke({ width: 2, color: 0x000000, alpha: 0.45 });
     c.addChild(g);
-    // inner sheen
-    c.addChild(new Graphics().circle(-NODE_R * 0.25, -NODE_R * 0.3, NODE_R * 0.45).fill({ color: 0xffffff, alpha: 0.09 }));
+    // inner sheen (pixel highlight)
+    c.addChild(new Graphics().rect(-NODE_R * 0.5, -NODE_R * 0.6, NODE_R * 0.8, NODE_R * 0.4).fill({ color: PX.ink, alpha: 0.12 }));
 
     c.alpha = visited || reachable || current ? 1 : 0.5;
 
-    c.addChild(label(meta.glyph, 22, 0xffffff, 0, 0, 0.5));
-    c.addChild(label(nodeLabel(node.type), 13, reachable ? UI.accent : UI.subtle, 0, NODE_R + 4, 0.5));
+    c.addChild(pxLabel(meta.glyph, 20, PX.ink, 0, 0, 0.5));
+    c.addChild(pxLabel(nodeLabel(node.type), 12, reachable ? PX.cyan : PX.subtle, 0, NODE_R + 6, 0.5));
 
     if (reachable && !this.mgr.isOver()) {
       c.eventMode = 'static';

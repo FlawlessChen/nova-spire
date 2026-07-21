@@ -1,8 +1,8 @@
-import { Container, Graphics } from 'pixi.js';
+import { Container } from 'pixi.js';
 import type { RunManager } from '@/game/runManager';
 import { layout } from '@/render/layout';
 import { L, relicName, relicDesc } from '@/i18n';
-import { label, button, panel, UI } from '@/render/ui';
+import { PX, pxLabel, pixelButton, pixelPanel, pixelOverlay } from '@/render/pixelUi';
 import { cardFace } from '@/render/cardArt';
 
 // ShopView: spend gold on cards / a relic / a one-time card removal. Reads the
@@ -28,7 +28,7 @@ export class ShopView {
 
   render(): void {
     this.root.removeChildren();
-    this.root.addChild(new Graphics().rect(0, 0, layout.W, layout.H).fill({ color: UI.overlay, alpha: 0.93 }));
+    this.root.addChild(pixelOverlay(layout.W, layout.H, 0.93));
     if (this.mode === 'shop') this.renderShop();
     else this.renderRemove();
   }
@@ -37,8 +37,8 @@ export class ShopView {
     const shop = this.mgr.state.shop;
     if (!shop) return;
 
-    this.root.addChild(label(L.ui.shopTitle, layout.portrait ? 26 : 32, UI.gold, layout.W / 2, 24, 0.5));
-    this.root.addChild(label(L.ui.shopGold(this.mgr.state.gold), 20, UI.gold, layout.W / 2, layout.portrait ? 62 : 64, 0.5));
+    this.root.addChild(pxLabel(L.ui.shopTitle, layout.portrait ? 24 : 30, PX.gold, layout.W / 2, 24, 0.5));
+    this.root.addChild(pxLabel(L.ui.shopGold(this.mgr.state.gold), 18, PX.gold, layout.W / 2, layout.portrait ? 62 : 64, 0.5));
 
     // cards for sale
     const cardW = layout.portrait ? 108 : 130;
@@ -58,8 +58,7 @@ export class ShopView {
       wrap.addChild(face);
       // price tag
       const affordable = !item.sold && this.mgr.state.gold >= item.price;
-      const tag = label(item.sold ? L.ui.shopSoldOut : L.ui.price(item.price), 14, item.sold ? UI.subtle : affordable ? UI.gold : UI.danger, cardW / 2, cardH + 6, 0.5);
-      wrap.addChild(tag);
+      wrap.addChild(pxLabel(item.sold ? L.ui.shopSoldOut : L.ui.price(item.price), 13, item.sold ? PX.subtle : affordable ? PX.gold : PX.red, cardW / 2, cardH + 6, 0.5));
       if (!item.sold) {
         face.eventMode = 'static';
         face.cursor = 'pointer';
@@ -78,10 +77,10 @@ export class ShopView {
       c.x = rowX;
       c.y = relicY;
       const affordable = !item.sold && this.mgr.state.gold >= item.price;
-      c.addChild(panel(w, 66, UI.panel, 12));
-      c.addChild(label(relicName(item.id), 17, item.sold ? UI.subtle : UI.gold, 16, 12));
-      c.addChild(label(relicDesc(item.id), 12, UI.subtle, 16, 38));
-      c.addChild(label(item.sold ? L.ui.shopSoldOut : L.ui.price(item.price), 15, item.sold ? UI.subtle : affordable ? UI.gold : UI.danger, w - 16, 24, 1));
+      c.addChild(pixelPanel(w, 66, { color: PX.panel, border: PX.gold }));
+      c.addChild(pxLabel(relicName(item.id), 16, item.sold ? PX.subtle : PX.gold, 16, 12));
+      c.addChild(pxLabel(relicDesc(item.id), 11, PX.subtle, 16, 38));
+      c.addChild(pxLabel(item.sold ? L.ui.shopSoldOut : L.ui.price(item.price), 14, item.sold ? PX.subtle : affordable ? PX.gold : PX.red, w - 16, 24, 1));
       if (!item.sold) {
         c.eventMode = 'static';
         c.cursor = 'pointer';
@@ -98,10 +97,10 @@ export class ShopView {
     const rc = new Container();
     rc.x = rx;
     rc.y = remY;
-    rc.addChild(panel(rw, 60, UI.panel, 12));
-    rc.addChild(label(L.ui.shopRemoval, 17, shop.removalUsed ? UI.subtle : UI.text, 16, 10));
-    rc.addChild(label(shop.removalUsed ? L.ui.shopRemovalDone : L.ui.shopRemovalHint, 12, UI.subtle, 16, 34));
-    rc.addChild(label(shop.removalUsed ? '' : L.ui.price(shop.removalPrice), 15, canRemove ? UI.gold : UI.danger, rw - 16, 22, 1));
+    rc.addChild(pixelPanel(rw, 60, { color: PX.panel, border: shop.removalUsed ? PX.subtle : PX.red }));
+    rc.addChild(pxLabel(L.ui.shopRemoval, 16, shop.removalUsed ? PX.subtle : PX.text, 16, 10));
+    rc.addChild(pxLabel(shop.removalUsed ? L.ui.shopRemovalDone : L.ui.shopRemovalHint, 11, PX.subtle, 16, 34));
+    rc.addChild(pxLabel(shop.removalUsed ? '' : L.ui.price(shop.removalPrice), 14, canRemove ? PX.gold : PX.red, rw - 16, 22, 1));
     if (canRemove) {
       rc.eventMode = 'static';
       rc.cursor = 'pointer';
@@ -110,12 +109,12 @@ export class ShopView {
     this.root.addChild(rc);
 
     this.root.addChild(
-      button(L.ui.shopLeave, layout.W / 2 - 100, layout.H - 66, () => this.actions.onLeave(), { width: 200, height: 50 }),
+      pixelButton(L.ui.shopLeave, layout.W / 2 - 100, layout.H - 66, () => this.actions.onLeave(), { width: 200, height: 50, variant: 'secondary' }),
     );
   }
 
   private renderRemove(): void {
-    this.root.addChild(label(L.ui.shopChooseRemoval, layout.portrait ? 24 : 30, UI.gold, layout.W / 2, 30, 0.5));
+    this.root.addChild(pxLabel(L.ui.shopChooseRemoval, layout.portrait ? 22 : 28, PX.gold, layout.W / 2, 30, 0.5));
 
     const deck = this.mgr.state.deck;
     const cardW = layout.portrait ? 104 : 118;
@@ -139,7 +138,7 @@ export class ShopView {
     });
 
     this.root.addChild(
-      button(L.ui.back, layout.W / 2 - 90, layout.H - 66, () => { this.mode = 'shop'; this.render(); }, { width: 180, height: 50 }),
+      pixelButton(L.ui.back, layout.W / 2 - 90, layout.H - 66, () => { this.mode = 'shop'; this.render(); }, { width: 180, height: 50, variant: 'secondary' }),
     );
   }
 }
