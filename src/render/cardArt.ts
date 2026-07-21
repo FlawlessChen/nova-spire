@@ -2,7 +2,7 @@ import { Container, Graphics, Text } from 'pixi.js';
 import type { CardDefinition } from '@/types';
 import { resolveCard, isUpgraded } from '@/data/cardUpgrade';
 import { cardName, cardDesc, cardTypeLabel } from '@/i18n';
-import { PX, PIXEL_FONT, pxText, scanlines } from '@/render/pixelUi';
+import { PX, PIXEL_FONT, pxText, scanlines, pixelGem } from '@/render/pixelUi';
 
 // Retro pixel / CRT card skin. Type-coloured blocks, pixel-stepped borders,
 // Zpix CJK bitmap font, and CRT scanlines. Pulls primitives + palette from
@@ -89,23 +89,27 @@ export function cardFace(definitionId: string, w: number, h: number, opts: CardF
   frame.rect(w - 4, 2, 2, 2).fill(borderColor);
   frame.rect(2, h - 4, 2, 2).fill(borderColor);
   frame.rect(w - 4, h - 4, 2, 2).fill(borderColor);
-  // type indicator strip on the top edge
-  frame.rect(6, 0, Math.max(20, w * 0.24), 2).fill(tColor);
-  frame.rect(w - Math.max(20, w * 0.24) - 6, h - 2, Math.max(20, w * 0.24), 2).fill({ color: tColor, alpha: 0.6 });
   c.addChild(frame);
+
+  // ── rarity track: solid blocky bar along the very top edge ──
+  // Replaces the old star pips — a single clean signal of the card's rarity.
+  const track = new Graphics();
+  track.rect(3, 3, w - 6, 4).fill(borderColor);
+  track.rect(3, 3, w - 6, 1).fill({ color: PX.ink, alpha: 0.25 });
+  c.addChild(track);
 
   // ── type band: solid blocky header in the type colour ──
   const band = new Graphics();
-  band.rect(4, 4, w - 8, bandH).fill({ color: tColor, alpha: 0.92 });
+  band.rect(4, 4 + bandH, w - 8, bandH).fill({ color: tColor, alpha: 0.92 });
   band.rect(4, 4 + bandH, w - 8, 2).fill({ color: 0x000000, alpha: 0.5 });
   // a 1px highlight along the top of the band
-  band.rect(4, 4, w - 8, 1).fill({ color: PX.ink, alpha: 0.25 });
+  band.rect(4, 4 + bandH, w - 8, 1).fill({ color: PX.ink, alpha: 0.25 });
   c.addChild(band);
 
   // ── art viewport: recessed blocky frame with sigil + pixel stars ──
   const art = new Graphics();
   const artX = 5;
-  const artY = 4 + bandH + 4;
+  const artY = 4 + bandH * 2 + 4;
   const artW = w - 10;
   const artH = Math.round(h * 0.36);
   art.rect(artX, artY, artW, artH).fill(PX.bgInner).stroke({ width: 1, color: borderColor, alpha: 0.7 });
@@ -125,31 +129,21 @@ export function cardFace(definitionId: string, w: number, h: number, opts: CardF
   scanlines(art, artX, artY, artW, artH, 3, 0.14);
   c.addChild(art);
 
-  // ── cost gem: faceted pixel block (octagon-ish) ──
-  const gem = new Graphics();
-  const gx = 16;
-  const gy = 4 + bandH / 2;
-  const gr = Math.round(bandH * 0.42);
-  // outer block
-  gem.rect(gx - gr, gy - gr, gr * 2, gr * 2).fill(0x000000).stroke({ width: 2, color: PX.gold, alpha: 1 });
-  // facet: inner diagonal cuts (corner squares in bg colour)
-  gem.rect(gx - gr, gy - gr, 3, 3).fill(PX.bg);
-  gem.rect(gx + gr - 3, gy - gr, 3, 3).fill(PX.bg);
-  gem.rect(gx - gr, gy + gr - 3, 3, 3).fill(PX.bg);
-  gem.rect(gx + gr - 3, gy + gr - 3, 3, 3).fill(PX.bg);
-  // inner core
-  gem.rect(gx - gr + 4, gy - gr + 4, gr * 2 - 8, gr * 2 - 8).fill({ color: PX.gold, alpha: 0.22 });
-  // specular highlight
-  gem.rect(gx - gr + 4, gy - gr + 4, 3, 3).fill({ color: PX.ink, alpha: 0.7 });
-  c.addChild(gem);
-  c.addChild(pxText(`${def.cost}`, Math.max(11, Math.round(bandH * 0.5)), 0x2a1a05, gx, gy, 0.5, 0.5));
+  // ── cost gem: clean pixel diamond (rotated square), smaller & inside frame ──
+  const gemSize = 22;
+  c.addChild(pixelGem(gemSize, borderColor, PX.gold, gemSize / 2 + 6, 4 + bandH + gemSize / 2 + 2, {
+    fillAlpha: 0.28,
+    label: `${def.cost}`,
+    labelColor: 0x2a1a05,
+    labelSize: 13,
+  }));
 
   // ── name on the band (pixel font, centred, leaving room for the gem) ──
   const nameSize = Math.max(11, Math.round(bandH * 0.5));
-  c.addChild(pxText(cardName(definitionId), nameSize, PX.ink, w / 2 + 8, 4 + bandH / 2, 0.5, 0.5));
+  c.addChild(pxText(cardName(definitionId), nameSize, PX.ink, w / 2 + 8, 4 + bandH * 1.5, 0.5, 0.5));
 
   // upgraded marker: a small `+` chip at the bottom-right corner (kept clear of
-  // the rarity pips which live at the top-right)
+  // the rarity track which lives along the top edge)
   if (upgraded) {
     const up = new Container();
     up.x = w - 20;
@@ -202,17 +196,6 @@ export function cardFace(definitionId: string, w: number, h: number, opts: CardF
   chipLabel.anchor.set(0, 0.5);
   chip.addChild(chipLabel);
   c.addChild(chip);
-
-  // ── rarity pips: pixel stars (plus-shaped) in the top-right ──
-  const pips = def.rarity === 'rare' ? 3 : def.rarity === 'uncommon' ? 2 : 1;
-  const rarity = new Graphics();
-  for (let i = 0; i < pips; i++) {
-    const px = w - 8 - i * 8;
-    const py = 8;
-    rarity.rect(px - 1, py - 3, 2, 6).fill({ color: borderColor, alpha: 0.95 });
-    rarity.rect(px - 3, py - 1, 6, 2).fill({ color: borderColor, alpha: 0.95 });
-  }
-  c.addChild(rarity);
 
   // ── global CRT scanlines over the whole card face ──
   const crt = new Graphics();
